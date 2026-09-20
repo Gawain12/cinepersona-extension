@@ -18,6 +18,17 @@
 
 ---
 
+## English summary
+
+CinePersona is a Chromium extension for movie scrobbling and Douban backup. It identifies films while you watch on supported streaming and cloud-drive sites, tracks playback progress, and lets you save ratings and short reviews.
+
+- Cloud writes are opt-in: only records you explicitly select and confirm are sent to your CinePersona library.
+- Douban data is first processed and stored locally; you can export a complete CSV backup at any time.
+- TV episodes, short videos, and commentary/UGC content are filtered out of the movie history.
+- The extension uses the browser language: Chinese browsers show Simplified Chinese, other non-empty languages show English, and an empty language falls back to Chinese.
+
+The detailed guide below is currently in Chinese. The Edge and Chrome store submission copy is maintained in [`store-assets/edge/submission-guide.md`](../store-assets/edge/submission-guide.md).
+
 ## 📸 核心界面预览 (Showcase)
 
 ### 1. 网页与网盘观影智能识别与实时打卡 (Now Playing)

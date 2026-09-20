@@ -3,6 +3,10 @@
  * Displays matching status, rating stars, rewatch badges, and collapsible review input.
  */
 
+const cpT = (zh, en) => globalThis.CinePersonaI18n && typeof globalThis.CinePersonaI18n.t === "function"
+  ? globalThis.CinePersonaI18n.t(zh, en)
+  : zh;
+
 const CineUI = {
   containerId: "cinepersona-extension-toast-container",
 
@@ -269,7 +273,7 @@ const CineUI = {
     const toast = document.createElement("div");
     toast.className = "cp-toast";
 
-    const movieTitle = movie.title || "已识别影片";
+    const movieTitle = movie.title || cpT("已识别影片", "Recognized film");
     const movieYear = movie.year ? `(${movie.year})` : "";
     const posterUrl = movie.posterURL || "";
     
@@ -278,21 +282,21 @@ const CineUI = {
     const initialRating = activity?.rating ? Math.round(activity.rating / 2) : 0;
     const initialReview = activity?.reviewText || "";
 
-    const badgeText = isAutoScrobbled ? (isRewatch ? "重温打卡" : "自动打卡") : "已识别";
+    const badgeText = isAutoScrobbled ? (isRewatch ? cpT("重温打卡", "Rewatch") : cpT("自动打卡", "Auto-scrobbled")) : cpT("已识别", "Recognized");
     const badgeStyle = isAutoScrobbled
       ? "background: rgba(16, 185, 129, 0.18); color: #34d399; border-color: rgba(16, 185, 129, 0.35);"
       : "background: rgba(59, 130, 246, 0.18); color: #60a5fa; border-color: rgba(59, 130, 246, 0.35);";
     const badgeHtml = `<span class="cp-badge" style="${badgeStyle}">${badgeText}</span>`;
     const metaSub = isAutoScrobbled
-      ? (isRewatch ? `此前已看 · 本次记录为重温` : `🎉 观影进度达标 · 已自动记入片库`)
-      : `🎬 播放已识别 · 达 80% 自动打卡`;
+      ? (isRewatch ? cpT(`此前已看 · 本次记录为重温`, `Previously watched · recording a rewatch`) : cpT(`🎉 观影进度达标 · 已自动记入片库`, `🎉 Playback threshold reached · saved automatically`))
+      : cpT(`🎬 播放已识别 · 达 80% 自动打卡`, `🎬 Playback recognized · auto-saves at 80%`);
 
     // Ratings badges
     const ratings = Array.isArray(movie.ratings) ? movie.ratings : [];
     const ratingsHtml = ratings.length > 0 ? `
       <div class="cp-ratings-row" style="display: flex; gap: 6px; margin: 4px 0 2px 0;">
         ${ratings.map((r) => {
-          const sLabel = r.source === "Douban" ? "豆" : (r.source === "Letterboxd" ? "LB" : r.source);
+          const sLabel = r.source === "Douban" ? "DB" : (r.source === "Letterboxd" ? "LB" : r.source);
           return `<span style="font-size: 10px; color: #94a3b8; background: rgba(255, 255, 255, 0.06); padding: 1px 5px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.08);">${sLabel} <b style="color: #f1f5f9;">${r.score}</b></span>`;
         }).join("")}
       </div>
@@ -331,10 +335,10 @@ const CineUI = {
       <div class="cp-header">
         <div class="cp-brand">
           ${brandIconHtml}
-          <span>CinePersona 影格</span>
+          <span>${cpT("CinePersona 影格", "CinePersona")}</span>
           ${badgeHtml}
         </div>
-        <button class="cp-close" title="关闭">&times;</button>
+        <button class="cp-close" title="${cpT("关闭", "Close")}">&times;</button>
       </div>
       <div class="cp-body">
         <div class="cp-poster-wrapper">
@@ -353,10 +357,10 @@ const CineUI = {
                 <span class="cp-star" data-idx="3">★</span>
                 <span class="cp-star" data-idx="4">★</span>
               </div>
-              <span class="cp-star-label" id="cpStarLabel">${initialRating > 0 ? `${(initialRating * 2).toFixed(initialRating % 1 === 0 ? 0 : 1)} 分` : "滑动打分"}</span>
+              <span class="cp-star-label" id="cpStarLabel">${initialRating > 0 ? `${(initialRating * 2).toFixed(initialRating % 1 === 0 ? 0 : 1)} ${cpT("分", "pts")}` : cpT("滑动打分", "Slide to rate")}</span>
             </div>
           ` : `
-            <div class="cp-meta" style="color: #60a5fa; margin-top: 4px;">登录后可点亮电影DNA</div>
+            <div class="cp-meta" style="color: #60a5fa; margin-top: 4px;">${cpT("登录后可点亮电影DNA", "Sign in to unlock your movie DNA")}</div>
           `}
         </div>
       </div>
@@ -364,21 +368,21 @@ const CineUI = {
       ${isAuthenticated ? `
         <div class="cp-comment-section">
           <span class="cp-comment-toggle" id="cpToggleComment">
-            <span>✍ ${initialReview ? "编辑影评短评" : "写句简评 / 随笔..."}</span>
+            <span>✍ ${initialReview ? cpT("编辑影评短评", "Edit review") : cpT("写句简评 / 随笔...", "Write a short review...")}</span>
           </span>
-          <textarea class="cp-textarea ${initialReview ? 'show' : ''}" id="cpReviewInput" placeholder="这片怎么样？写几句观后感同步到影格个人主页...">${initialReview}</textarea>
+          <textarea class="cp-textarea ${initialReview ? 'show' : ''}" id="cpReviewInput" placeholder="${cpT("这片怎么样？写几句观后感同步到影格个人主页...", "How was the film? Write a few lines to sync to your CinePersona profile...")}">${initialReview}</textarea>
         </div>
       ` : ""}
 
       <div class="cp-actions">
         ${isAuthenticated ? `
           <button class="cp-btn cp-btn-primary cp-btn-done">
-            ${isAutoScrobbled ? (isRewatch ? "记录本次重温 ✓" : "确认已看过 ✓") : "立即打卡已看 ✓"}
+            ${isAutoScrobbled ? (isRewatch ? cpT("记录本次重温 ✓", "Record this rewatch ✓") : cpT("确认已看过 ✓", "Confirm watched ✓")) : cpT("立即打卡已看 ✓", "Mark as watched ✓")}
           </button>
-          <button class="cp-btn cp-btn-ghost cp-btn-correct">纠正</button>
+          <button class="cp-btn cp-btn-ghost cp-btn-correct">${cpT("纠正", "Correct")}</button>
         ` : `
-          <a class="cp-btn cp-btn-primary cp-btn-auth" href="https://cinepersona.com/login?next=/movie/${movie.id}" target="_blank">一键登录建档</a>
-          <button class="cp-btn cp-btn-ghost cp-btn-correct">搜索纠偏</button>
+          <a class="cp-btn cp-btn-primary cp-btn-auth" href="https://cinepersona.com/login?next=/movie/${movie.id}" target="_blank">${cpT("一键登录建档", "Sign in to build your library")}</a>
+          <button class="cp-btn cp-btn-ghost cp-btn-correct">${cpT("搜索纠偏", "Search and correct")}</button>
         `}
       </div>
     `;
@@ -432,7 +436,7 @@ const CineUI = {
           }
         });
         if (starLabel) {
-          starLabel.textContent = ratingVal > 0 ? `${(ratingVal * 2).toFixed(ratingVal % 1 === 0 ? 0 : 1)} 分` : "滑动打分";
+          starLabel.textContent = ratingVal > 0 ? `${(ratingVal * 2).toFixed(ratingVal % 1 === 0 ? 0 : 1)} ${cpT("分", "pts")}` : cpT("滑动打分", "Slide to rate");
         }
       };
 
@@ -493,7 +497,7 @@ const CineUI = {
             isRewatch
           });
         }
-        doneBtn.textContent = isRewatch ? "已记录重温！" : "已入库！";
+        doneBtn.textContent = isRewatch ? cpT("已记录重温！", "Rewatch recorded!") : cpT("已入库！", "Saved to library!");
         setTimeout(dismiss, 1000);
       });
     }

@@ -166,7 +166,7 @@
         });
       },
       onCorrect: () => {
-        const term = prompt("输入正确的电影片名进行检索纠偏：", movie.title);
+        const term = prompt(globalThis.CinePersonaI18n?.t("输入正确的电影片名进行检索纠偏：", "Enter the correct film title to search:"), movie.title);
         if (term && term.trim()) {
           window.open(`https://cinepersona.com/search?q=${encodeURIComponent(term.trim())}`, "_blank");
         }
@@ -370,7 +370,7 @@
                 scrobbler.hasScrobbled = true;
               },
               onCorrect: () => {
-                const term = prompt("输入正确的电影片名进行检索纠偏：", matchedMovie.title);
+                const term = prompt(globalThis.CinePersonaI18n?.t("输入正确的电影片名进行检索纠偏：", "Enter the correct film title to search:"), matchedMovie.title);
                 if (term && term.trim()) {
                   window.open(`https://cinepersona.com/search?q=${encodeURIComponent(term.trim())}`, "_blank");
                 }

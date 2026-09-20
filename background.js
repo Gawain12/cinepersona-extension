@@ -1,9 +1,14 @@
+importScripts("i18n.js");
+
 /**
  * CinePersona Background Service Worker
  * Handles CORS network requests, authentication session check, search resolution, and activity logging.
  */
 
 const DEFAULT_API_BASE = "https://cinepersona.com";
+const bgT = (zh, en) => globalThis.CinePersonaI18n && typeof globalThis.CinePersonaI18n.t === "function"
+  ? globalThis.CinePersonaI18n.t(zh, en)
+  : zh;
 
 // In-memory cache for mapping (cleanTitle+year -> movie)
 const searchCache = new Map();
@@ -206,7 +211,7 @@ async function checkDoubanSession() {
     return {
       loggedIn: true,
       uid: uidFromCookie,
-      name: userName || `豆瓣ID: ${uidFromCookie}`,
+      name: userName || bgT(`豆瓣ID: ${uidFromCookie}`, `Douban ID: ${uidFromCookie}`),
       avatar: userAvatar,
       doubanId: uidFromCookie,
       watchedCount,
@@ -252,7 +257,7 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
     status: "syncing",
     cloudSyncRequested: Boolean(allowCloudSync),
     cloudSyncStatus: allowCloudSync ? "pending" : "not_requested",
-    message: "正在准备本地数据库与同步...",
+    message: bgT("正在准备本地数据库与同步...", "Preparing the local library and sync..."),
     itemCount: 0,
     totalCount: 0,
     watchedCount: 0,
@@ -274,8 +279,8 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
     const isFirstTime = existingKeySet.size === 0;
 
     doubanSyncState.message = isFirstTime
-      ? "首次同步：正在全量建立本地豆瓣影视库..."
-      : `已加载本地库 (${existingKeySet.size} 部)，正在检查豆瓣最新标记...`;
+      ? bgT("首次同步：正在全量建立本地豆瓣影视库...", "First sync: building the local Douban film library...")
+      : bgT(`已加载本地库 (${existingKeySet.size} 部)，正在检查豆瓣最新标记...`, `Loaded ${existingKeySet.size} local films; checking the latest Douban marks...`);
 
     let newItems = [];
 
@@ -289,7 +294,8 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
       const action = isDone ? "collect" : "wish";
 
       while (!shouldStop) {
-        doubanSyncState.message = `📥 正在比对【${display}】... 已发现 ${newItems.length} 部新标记 (本地库累计 ${itemMap.size} 部)`;
+        const displayLabel = display === "看过" ? bgT("看过", "watched") : bgT("想看", "to watch");
+        doubanSyncState.message = bgT(`📥 正在比对【${display}】... 已发现 ${newItems.length} 部新标记 (本地库累计 ${itemMap.size} 部)`, `📥 Comparing ${displayLabel}... found ${newItems.length} new marks (${itemMap.size} films in the local library)`);
         doubanSyncState.itemCount = newItems.length;
 
         let batch = [];
@@ -430,7 +436,7 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
     let cloudSyncError = null;
     if (newItems.length > 0 && allowCloudSync && auth.authenticated) {
       cloudSyncStatus = "syncing";
-      doubanSyncState.message = `正在将新增的 ${newItems.length} 部标记写入影格片库...`;
+      doubanSyncState.message = bgT(`正在将新增的 ${newItems.length} 部标记写入影格片库...`, `Writing ${newItems.length} new marks to your CinePersona library...`);
       try {
         const importPayload = {
           source: "DOUBAN",
@@ -484,18 +490,18 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
     let successMsg = "";
     if (newItems.length > 0) {
       if (cloudSyncStatus === "completed") {
-        successMsg = `同步完成！发现 ${newItems.length} 部新标记并已写入影格，本地库共积累 ${allSortedItems.length} 部。`;
+        successMsg = bgT(`同步完成！发现 ${newItems.length} 部新标记并已写入影格，本地库共积累 ${allSortedItems.length} 部。`, `Sync complete! ${newItems.length} new marks were written to CinePersona; the local library now has ${allSortedItems.length} films.`);
       } else if (cloudSyncStatus === "failed") {
-        successMsg = `本地同步完成，新增 ${newItems.length} 部；影格云端写入失败：${cloudSyncError || "请稍后重试"}。`;
+        successMsg = bgT(`本地同步完成，新增 ${newItems.length} 部；影格云端写入失败：${cloudSyncError || "请稍后重试"}。`, `Local sync complete with ${newItems.length} new films; CinePersona cloud write failed: ${cloudSyncError || "please try again later"}.`);
       } else if (cloudSyncStatus === "unavailable") {
-        successMsg = `本地同步完成，新增 ${newItems.length} 部；当前未登录影格，未写入云端。`;
+        successMsg = bgT(`本地同步完成，新增 ${newItems.length} 部；当前未登录影格，未写入云端。`, `Local sync complete with ${newItems.length} new films; you are not signed in to CinePersona, so nothing was written to the cloud.`);
       } else if (auth.authenticated) {
-        successMsg = `本地同步完成，新增 ${newItems.length} 部；本次未授权写入影格云端。`;
+        successMsg = bgT(`本地同步完成，新增 ${newItems.length} 部；本次未授权写入影格云端。`, `Local sync complete with ${newItems.length} new films; cloud write was not authorized for this sync.`);
       } else {
-        successMsg = `更新完成！本地库新增 ${newItems.length} 部，共积累 ${allSortedItems.length} 部（未登录影格，未写入云端）。`;
+        successMsg = bgT(`更新完成！本地库新增 ${newItems.length} 部，共积累 ${allSortedItems.length} 部（未登录影格，未写入云端）。`, `Update complete! ${newItems.length} films were added; the local library now has ${allSortedItems.length} films (not signed in to CinePersona, so nothing was written to the cloud).`);
       }
     } else {
-      successMsg = `本地影视库已与豆瓣对齐（暂无新标记），本地库共 ${allSortedItems.length} 部；本次未向影格云端提交记录。`;
+      successMsg = bgT(`本地影视库已与豆瓣对齐（暂无新标记），本地库共 ${allSortedItems.length} 部；本次未向影格云端提交记录。`, `The local film library is up to date with Douban (no new marks). It contains ${allSortedItems.length} films; nothing was submitted to CinePersona cloud in this sync.`);
     }
 
     doubanSyncState = {
@@ -1002,7 +1008,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         doubanSyncState = {
           status: "idle",
           mode: "incremental",
-          message: "已重置本地库，点击上方按钮即可重新完整抓取。",
+          message: bgT("已重置本地库，点击上方按钮即可重新完整抓取。", "Local library reset. Click the button above to fetch everything again."),
           itemCount: 0,
           totalCount: 0,
           watchedCount: 0,

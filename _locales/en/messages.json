@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "CinePersona — Movie Scrobbling & Douban Backup"
+  },
+  "extensionDescription": {
+    "message": "Automatically identify films while you watch, record your viewing history, and back up Douban ratings and reviews with explicit cloud consent."
+  },
+  "actionTitle": {
+    "message": "CinePersona movie assistant"
+  }
+}

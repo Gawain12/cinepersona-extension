@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "CinePersona 影格 - 观影自动打卡与电影DNA",
+  "default_locale": "en",
+  "name": "__MSG_extensionName__",
   "short_name": "CinePersona",
-  "version": "1.0.1",
-  "description": "在网页观看爱优腾、B站及网盘（阿里云盘、夸克、百度、115）时，自动识别片名、记录观影足迹并生成电影性格DNA。",
+  "version": "1.0.2",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -38,7 +39,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "CinePersona 影格助手",
+    "default_title": "__MSG_actionTitle__",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon-16.png",
@@ -73,6 +74,7 @@
       ],
       "all_frames": true,
       "js": [
+        "i18n.js",
         "content/cleaner.js",
         "content/parsers.js",
         "content/scrobbler.js",

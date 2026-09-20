@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="referrer" content="no-referrer" />
-  <title>CinePersona 影格</title>
+  <title data-i18n-zh="CinePersona 影格" data-i18n-en="CinePersona">CinePersona 影格</title>
   <style>
     * {
       box-sizing: border-box;
@@ -746,19 +746,19 @@
 <body>
   <div class="header">
     <div class="brand">
-      <a href="https://cinepersona.com" target="_blank" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;" title="打开影格 CinePersona 官网">
+      <a href="https://cinepersona.com" target="_blank" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;" data-i18n-title-zh="打开影格 CinePersona 官网" data-i18n-title-en="Open CinePersona website">
         <img src="../icons/cinepersona-icon.png" style="width: 22px; height: 22px; border-radius: 6px; object-fit: contain;" alt="CinePersona" />
         <span>CinePersona</span>
       </a>
     </div>
-    <span id="authStatus" class="status-badge offline">检测中...</span>
+    <span id="authStatus" class="status-badge offline" data-i18n-zh="检测中..." data-i18n-en="Checking...">检测中...</span>
   </div>
 
   <!-- Tab Switcher (3 Tabs) -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="tab-playing">当前观影</button>
-    <button class="tab-btn" data-tab="tab-douban">🔄 豆瓣同步</button>
-    <button class="tab-btn" data-tab="tab-settings">偏好设置</button>
+    <button class="tab-btn active" data-tab="tab-playing" data-i18n-zh="当前观影" data-i18n-en="Now playing">当前观影</button>
+    <button class="tab-btn" data-tab="tab-douban" data-i18n-zh="🔄 豆瓣同步" data-i18n-en="🔄 Douban sync">🔄 豆瓣同步</button>
+    <button class="tab-btn" data-tab="tab-settings" data-i18n-zh="偏好设置" data-i18n-en="Preferences">偏好设置</button>
   </div>
 
   <!-- Tab 1: Now Playing -->
@@ -766,7 +766,7 @@
     <div id="playingContainer">
       <div class="card empty-playing">
         <div class="empty-icon">🎬</div>
-        <div>正在检查当前页面播放状态...</div>
+        <div data-i18n-zh="正在检查当前页面播放状态..." data-i18n-en="Checking playback on the current page...">正在检查当前页面播放状态...</div>
       </div>
     </div>
   </div>
@@ -774,29 +774,29 @@
   <!-- Tab 2: Douban Sync -->
   <div id="tab-douban" class="tab-content">
     <div class="card" id="doubanAccountCard">
-      <div class="card-title">豆瓣会话状态</div>
+      <div class="card-title" data-i18n-zh="豆瓣会话状态" data-i18n-en="Douban session">豆瓣会话状态</div>
       <div id="doubanAccountInfo">
-        <div style="font-size: 12px; color: #8e9eb5;">正在检测豆瓣登录 Cookie...</div>
+        <div style="font-size: 12px; color: #8e9eb5;" data-i18n-zh="正在检测豆瓣登录 Cookie..." data-i18n-en="Checking your Douban sign-in cookie...">正在检测豆瓣登录 Cookie...</div>
       </div>
       <div class="douban-sync-history" id="doubanSyncHistory">
-        <span id="doubanSyncHistoryText">上次同步：暂无记录</span>
-        <span id="doubanResetAnchorBtn" class="toggle-platforms" style="font-size: 10px; color: #8e9eb5; cursor: pointer;" title="清空本地库，从头重新抓取">清空本地库 ↺</span>
+        <span id="doubanSyncHistoryText" data-i18n-zh="上次同步：暂无记录" data-i18n-en="Last sync: none yet">上次同步：暂无记录</span>
+        <span id="doubanResetAnchorBtn" class="toggle-platforms" style="font-size: 10px; color: #8e9eb5; cursor: pointer;" data-i18n-title-zh="清空本地库，从头重新抓取" data-i18n-title-en="Clear the local library and sync from the beginning" data-i18n-zh="清空本地库 ↺" data-i18n-en="Clear local library ↺">清空本地库 ↺</span>
       </div>
     </div>
 
       <div class="card">
-        <div class="card-title">豆瓣同步与备份</div>
-        <div class="sync-log-box" id="doubanSyncLog">就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。</div>
+        <div class="card-title" data-i18n-zh="豆瓣同步与备份" data-i18n-en="Douban sync & backup">豆瓣同步与备份</div>
+        <div class="sync-log-box" id="doubanSyncLog" data-i18n-zh="就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。" data-i18n-en="Ready: sync your latest marks below, or export a local CSV backup.">就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。</div>
 
         <label class="cloud-sync-consent" for="cloudSyncConsent">
           <input type="checkbox" id="cloudSyncConsent" />
-          <span><strong>本次同时写入影格云端</strong><br />勾选后，新增电影的片名、评分、短评和标记时间会通过 HTTPS 提交到你的影格片库；不勾选则只更新本地库。</span>
+          <span data-i18n-html-zh="<strong>本次同时写入影格云端</strong><br />勾选后，新增电影的片名、评分、短评和标记时间会通过 HTTPS 提交到你的影格片库；不勾选则只更新本地库。" data-i18n-html-en="<strong>Also write this sync to CinePersona cloud</strong><br />When checked, new film titles, ratings, reviews, and timestamps are sent over HTTPS to your library; otherwise only the local library is updated."><strong>本次同时写入影格云端</strong><br />勾选后，新增电影的片名、评分、短评和标记时间会通过 HTTPS 提交到你的影格片库；不勾选则只更新本地库。</span>
         </label>
 
-        <button class="btn btn-primary" id="startDoubanSyncBtn">🔄 同步最新豆瓣数据</button>
-      <button class="btn btn-secondary" id="downloadDoubanCsvBtn" style="margin-top: 8px;">📥 导出本地完整 CSV 备份</button>
-      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-secondary" id="openImportCenterBtn" style="display: none; margin-top: 8px; text-decoration: none;">👉 前往影格【导入中心】上传入库 ↗</a>
-      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-warning" id="openUnmatchedBtn" style="display: none; margin-top: 8px;">👉 前往影格处理未匹配项 ↗</a>
+        <button class="btn btn-primary" id="startDoubanSyncBtn" data-i18n-zh="🔄 同步最新豆瓣数据" data-i18n-en="🔄 Sync latest Douban data">🔄 同步最新豆瓣数据</button>
+      <button class="btn btn-secondary" id="downloadDoubanCsvBtn" style="margin-top: 8px;" data-i18n-zh="📥 导出本地完整 CSV 备份" data-i18n-en="📥 Export full local CSV backup">📥 导出本地完整 CSV 备份</button>
+      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-secondary" id="openImportCenterBtn" style="display: none; margin-top: 8px; text-decoration: none;" data-i18n-zh="👉 前往影格【导入中心】上传入库 ↗" data-i18n-en="👉 Open CinePersona import center ↗">👉 前往影格【导入中心】上传入库 ↗</a>
+      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-warning" id="openUnmatchedBtn" style="display: none; margin-top: 8px;" data-i18n-zh="👉 前往影格处理未匹配项 ↗" data-i18n-en="👉 Open CinePersona to review unmatched films ↗">👉 前往影格处理未匹配项 ↗</a>
     </div>
   </div>
 
@@ -804,38 +804,38 @@
   <div id="tab-settings" class="tab-content">
     <!-- Account Card -->
     <div class="card" id="userBox">
-      <div class="card-title">当前绑定账号</div>
-      <div class="card-content" id="userInfo" style="font-size: 12px; line-height: 1.5;">检查登录会话中...</div>
+      <div class="card-title" data-i18n-zh="当前绑定账号" data-i18n-en="Connected account">当前绑定账号</div>
+      <div class="card-content" id="userInfo" style="font-size: 12px; line-height: 1.5;" data-i18n-zh="检查登录会话中..." data-i18n-en="Checking sign-in session...">检查登录会话中...</div>
     </div>
 
     <!-- Scrobble Timing Preference -->
     <div class="card">
-      <div class="card-title">打卡与弹窗机制</div>
+      <div class="card-title" data-i18n-zh="打卡与弹窗机制" data-i18n-en="Scrobble & toast behavior">打卡与弹窗机制</div>
       <div class="setting-row">
-        <span>打卡时机：</span>
+        <span data-i18n-zh="打卡时机：" data-i18n-en="Scrobble at:">打卡时机：</span>
         <select id="scrobbleTiming" class="setting-select">
-          <option value="0.80">播放达 80% 时</option>
-          <option value="0.90">播放达 90% 时</option>
-          <option value="1.00">播放完全结束时</option>
-          <option value="manual">仅静默入库（不弹窗）</option>
+          <option value="0.80" data-i18n-zh="播放达 80% 时" data-i18n-en="At 80% playback">播放达 80% 时</option>
+          <option value="0.90" data-i18n-zh="播放达 90% 时" data-i18n-en="At 90% playback">播放达 90% 时</option>
+          <option value="1.00" data-i18n-zh="播放完全结束时" data-i18n-en="When playback ends">播放完全结束时</option>
+          <option value="manual" data-i18n-zh="仅静默入库（不弹窗）" data-i18n-en="Save silently (no toast)">仅静默入库（不弹窗）</option>
         </select>
       </div>
     </div>
 
     <!-- Supported Platforms -->
     <div class="card">
-      <div class="card-title">支持平台</div>
-      <div class="platforms-summary">
+      <div class="card-title" data-i18n-zh="支持平台" data-i18n-en="Supported platforms">支持平台</div>
+      <div class="platforms-summary" data-i18n-html-zh="已覆盖 <b>14 大主流</b> 网盘与流媒体（网盘/爱优腾B站/Netflix/YouTube等）。" data-i18n-html-en="Supports <b>14 major</b> streaming and cloud-drive platforms (including Bilibili, Netflix, and YouTube).">
         已覆盖 <b>14 大主流</b> 网盘与流媒体（网盘/爱优腾B站/Netflix/YouTube等）。
       </div>
-      <span id="togglePlatformsBtn" class="toggle-platforms">查看全部支持平台 ▾</span>
+      <span id="togglePlatformsBtn" class="toggle-platforms" data-i18n-zh="查看全部支持平台 ▾" data-i18n-en="Show all supported platforms ▾">查看全部支持平台 ▾</span>
       <div class="platforms-detail" id="platformsDetail">
-        <span class="platform-item">哔哩哔哩 (B站)</span>
-        <span class="platform-item">腾讯视频 / 爱奇艺</span>
-        <span class="platform-item">优酷 / 芒果TV</span>
-        <span class="platform-item">阿里云盘 / 夸克网盘</span>
-        <span class="platform-item">百度网盘 / 115网盘</span>
-        <span class="platform-item">Netflix (网飞)</span>
+        <span class="platform-item" data-i18n-zh="哔哩哔哩 (B站)" data-i18n-en="Bilibili">哔哩哔哩 (B站)</span>
+        <span class="platform-item" data-i18n-zh="腾讯视频 / 爱奇艺" data-i18n-en="Tencent Video / iQIYI">腾讯视频 / 爱奇艺</span>
+        <span class="platform-item" data-i18n-zh="优酷 / 芒果TV" data-i18n-en="Youku / Mango TV">优酷 / 芒果TV</span>
+        <span class="platform-item" data-i18n-zh="阿里云盘 / 夸克网盘" data-i18n-en="Aliyun Drive / Quark Drive">阿里云盘 / 夸克网盘</span>
+        <span class="platform-item" data-i18n-zh="百度网盘 / 115网盘" data-i18n-en="Baidu Drive / 115 Drive">百度网盘 / 115网盘</span>
+        <span class="platform-item" data-i18n-zh="Netflix (网飞)" data-i18n-en="Netflix">Netflix (网飞)</span>
         <span class="platform-item">YouTube</span>
         <span class="platform-item">Prime Video</span>
         <span class="platform-item">Disney+</span>
@@ -844,12 +844,13 @@
       </div>
     </div>
 
-    <a href="https://cinepersona.com/dna" target="_blank" class="btn btn-primary" id="mainAction">查看我的电影 DNA</a>
-    <a href="https://cinepersona.com/settings" target="_blank" class="btn btn-secondary">影格设置中心</a>
+    <a href="https://cinepersona.com/dna" target="_blank" class="btn btn-primary" id="mainAction" data-i18n-zh="查看我的电影 DNA" data-i18n-en="View my movie DNA">查看我的电影 DNA</a>
+    <a href="https://cinepersona.com/settings" target="_blank" class="btn btn-secondary" data-i18n-zh="影格设置中心" data-i18n-en="CinePersona settings">影格设置中心</a>
   </div>
 
-  <div class="footer">智能片名解析 · 丝滑零打扰</div>
+  <div class="footer" data-i18n-zh="智能片名解析 · 丝滑零打扰" data-i18n-en="Smart title matching · Quiet by design">智能片名解析 · 丝滑零打扰</div>
 
+  <script src="../i18n.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
