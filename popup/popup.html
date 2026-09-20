@@ -549,6 +549,27 @@
       margin-bottom: 10px;
       word-break: break-all;
     }
+    .cloud-sync-consent {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin: 10px 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 165, 250, 0.25);
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.08);
+      color: #cbd5e1;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .cloud-sync-consent input {
+      flex: 0 0 auto;
+      margin-top: 2px;
+      accent-color: #3b82f6;
+    }
+    .cloud-sync-consent strong {
+      color: #e2e8f0;
+    }
 
     /* Settings Tab Styles */
     .setting-row {
@@ -763,11 +784,16 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-title">豆瓣同步与备份</div>
-      <div class="sync-log-box" id="doubanSyncLog">就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。</div>
+      <div class="card">
+        <div class="card-title">豆瓣同步与备份</div>
+        <div class="sync-log-box" id="doubanSyncLog">就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。</div>
 
-      <button class="btn btn-primary" id="startDoubanSyncBtn">🔄 同步最新豆瓣数据</button>
+        <label class="cloud-sync-consent" for="cloudSyncConsent">
+          <input type="checkbox" id="cloudSyncConsent" />
+          <span><strong>本次同时写入影格云端</strong><br />勾选后，新增电影的片名、评分、短评和标记时间会通过 HTTPS 提交到你的影格片库；不勾选则只更新本地库。</span>
+        </label>
+
+        <button class="btn btn-primary" id="startDoubanSyncBtn">🔄 同步最新豆瓣数据</button>
       <button class="btn btn-secondary" id="downloadDoubanCsvBtn" style="margin-top: 8px;">📥 导出本地完整 CSV 备份</button>
       <a href="https://cinepersona.com/import" target="_blank" class="btn btn-secondary" id="openImportCenterBtn" style="display: none; margin-top: 8px; text-decoration: none;">👉 前往影格【导入中心】上传入库 ↗</a>
       <a href="https://cinepersona.com/import" target="_blank" class="btn btn-warning" id="openUnmatchedBtn" style="display: none; margin-top: 8px;">👉 前往影格处理未匹配项 ↗</a>

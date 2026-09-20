@@ -245,11 +245,13 @@ function generateCsvFromItems(items) {
   return "\uFEFF" + csvRows.join("\n");
 }
 
-async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE) {
+async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowCloudSync = false) {
   if (doubanSyncState.status === "syncing") return doubanSyncState;
 
   doubanSyncState = {
     status: "syncing",
+    cloudSyncRequested: Boolean(allowCloudSync),
+    cloudSyncStatus: allowCloudSync ? "pending" : "not_requested",
     message: "正在准备本地数据库与同步...",
     itemCount: 0,
     totalCount: 0,
@@ -423,8 +425,11 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE) {
       doubanLastSyncTime: localDb.lastSyncTime
     });
 
-    // Push new items to CinePersona if user is logged in
-    if (newItems.length > 0 && auth.authenticated) {
+    // Push new items to CinePersona only after the user explicitly opted in for this sync.
+    let cloudSyncStatus = "not_requested";
+    let cloudSyncError = null;
+    if (newItems.length > 0 && allowCloudSync && auth.authenticated) {
+      cloudSyncStatus = "syncing";
       doubanSyncState.message = `正在将新增的 ${newItems.length} 部标记写入影格片库...`;
       try {
         const importPayload = {
@@ -456,30 +461,48 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE) {
           })
         };
 
-        await fetch(`${apiBase}/v1/import/jobs`, {
+        const importRes = await fetch(`${apiBase}/v1/import/jobs`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(importPayload)
         });
+        if (!importRes.ok) {
+          const errorBody = await importRes.json().catch(() => ({}));
+          throw new Error(errorBody.error?.message || `影格导入接口返回 ${importRes.status}`);
+        }
+        cloudSyncStatus = "completed";
       } catch (e) {
-        console.log("[CinePersona] 提交写入影格异常:", e);
+        cloudSyncStatus = "failed";
+        cloudSyncError = e.message;
+        console.warn("[CinePersona] 提交写入影格异常:", e);
       }
+    } else if (newItems.length > 0 && allowCloudSync && !auth.authenticated) {
+      cloudSyncStatus = "unavailable";
     }
 
     let successMsg = "";
     if (newItems.length > 0) {
-      if (auth.authenticated) {
+      if (cloudSyncStatus === "completed") {
         successMsg = `同步完成！发现 ${newItems.length} 部新标记并已写入影格，本地库共积累 ${allSortedItems.length} 部。`;
+      } else if (cloudSyncStatus === "failed") {
+        successMsg = `本地同步完成，新增 ${newItems.length} 部；影格云端写入失败：${cloudSyncError || "请稍后重试"}。`;
+      } else if (cloudSyncStatus === "unavailable") {
+        successMsg = `本地同步完成，新增 ${newItems.length} 部；当前未登录影格，未写入云端。`;
+      } else if (auth.authenticated) {
+        successMsg = `本地同步完成，新增 ${newItems.length} 部；本次未授权写入影格云端。`;
       } else {
         successMsg = `更新完成！本地库新增 ${newItems.length} 部，共积累 ${allSortedItems.length} 部（未登录影格，未写入云端）。`;
       }
     } else {
-      successMsg = `本地影视库已与豆瓣对齐（暂无新标记），本地库共 ${allSortedItems.length} 部。`;
+      successMsg = `本地影视库已与豆瓣对齐（暂无新标记），本地库共 ${allSortedItems.length} 部；本次未向影格云端提交记录。`;
     }
 
     doubanSyncState = {
       status: "success",
+      cloudSyncRequested: Boolean(allowCloudSync),
+      cloudSyncStatus,
+      cloudSyncError,
       message: successMsg,
       itemCount: newItems.length,
       totalCount: allSortedItems.length,
@@ -493,6 +516,8 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE) {
   } catch (err) {
     doubanSyncState = {
       status: "error",
+      cloudSyncRequested: Boolean(allowCloudSync),
+      cloudSyncStatus: "error",
       message: err.message,
       itemCount: 0,
       totalCount: 0,
@@ -945,8 +970,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       if (message.action === "DOUBAN_START_SYNC") {
-        const { uid } = message.payload || {};
-        executeDoubanSmartSync(uid, apiBase);
+        const { uid, allowCloudSync = false } = message.payload || {};
+        executeDoubanSmartSync(uid, apiBase, Boolean(allowCloudSync));
         sendResponse({ success: true, status: doubanSyncState });
         return;
       }

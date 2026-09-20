@@ -572,6 +572,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const doubanSyncHistory = document.getElementById("doubanSyncHistory");
   const startDoubanSyncBtn = document.getElementById("startDoubanSyncBtn");
   const doubanSyncLog = document.getElementById("doubanSyncLog");
+  const cloudSyncConsent = document.getElementById("cloudSyncConsent");
   const openUnmatchedBtn = document.getElementById("openUnmatchedBtn");
   const downloadDoubanCsvBtn = document.getElementById("downloadDoubanCsvBtn");
   const openImportCenterBtn = document.getElementById("openImportCenterBtn");
@@ -751,15 +752,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadDoubanSession();
         return;
       }
+      const allowCloudSync = Boolean(cloudSyncConsent?.checked);
+      if (allowCloudSync && !confirm("本次将把新增电影的片名、评分、短评和标记时间提交到你的影格片库。确认继续吗？")) {
+        return;
+      }
+      if (cloudSyncConsent) cloudSyncConsent.checked = false;
       startDoubanSyncBtn.disabled = true;
       startDoubanSyncBtn.textContent = "正在启动抓取...";
-      if (doubanSyncLog) doubanSyncLog.textContent = "正在连接豆瓣比对影视标记...";
+      if (doubanSyncLog) {
+        doubanSyncLog.textContent = allowCloudSync
+          ? "已确认云端写入授权，正在连接豆瓣比对影视标记..."
+          : "仅更新本地库，正在连接豆瓣比对影视标记...";
+      }
       if (openUnmatchedBtn) openUnmatchedBtn.style.display = "none";
 
       chrome.runtime.sendMessage(
         {
           action: "DOUBAN_START_SYNC",
-          payload: { uid: currentDoubanUser.uid }
+          payload: { uid: currentDoubanUser.uid, allowCloudSync }
         },
         (res) => {
           if (res && res.status) {
