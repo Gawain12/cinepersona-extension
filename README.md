@@ -79,7 +79,15 @@
 
 本扩展适用于所有基于 Chromium 内核的现代浏览器（**Google Chrome、Microsoft Edge、Brave、Vivaldi、360极速浏览器、QQ浏览器** 等），以及 **Android 手机上的 Kiwi Browser**。
 
-### 方式一：直接加载离线包（推荐，简单快捷）
+### 方式一：Microsoft Edge 官方商店（Edge 用户推荐）
+
+在 Edge 中打开下面的官方商店页面，点击 **Get / 获取** 即可安装：
+
+- [从 Microsoft Edge Add-ons 安装 CinePersona](https://microsoftedge.microsoft.com/addons/detail/dlohopoibaakgpgdbcoflheocgcppmkp)
+
+> 该链接需要使用 Microsoft Edge 打开；Chrome 用户或希望手动安装的用户，请继续使用下面的 ZIP 离线包。
+
+### 方式二：直接加载离线包（Chrome / 其他 Chromium 浏览器）
 
 1. **下载拓展包**：
    - 访问 [影格同步中心](https://cinepersona.com/sync) 或在 [Releases 页面](../../releases) 下载最新的 `cinepersona-extension-latest.zip`；
@@ -92,7 +100,7 @@
    - 点击左上角出现的 **「加载已解压的扩展程序」 (Load unpacked)** 按钮；
    - 选择刚刚解压出来的扩展文件夹即可完成安装！
 
-### 方式二：Git 源码克隆
+### 方式三：Git 源码克隆
 
 ```bash
 # 1. 克隆本仓库到本地

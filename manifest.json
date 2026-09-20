@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CinePersona 影格 - 观影自动打卡与电影DNA",
   "short_name": "CinePersona",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "在网页观看爱优腾、B站及网盘（阿里云盘、夸克、百度、115）时，自动识别片名、记录观影足迹并生成电影性格DNA。",
   "icons": {
     "16": "icons/icon-16.png",
