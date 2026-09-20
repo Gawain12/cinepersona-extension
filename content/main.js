@@ -274,7 +274,41 @@
       return;
     }
 
-    if (!cleanResult.title || cleanResult.title.length < 1) return;
+    // 4. Reject obvious UGC/commentary/vlog titles
+    if (cleanResult.isCommentary) {
+      if (ignoredReason !== "TV_SERIES") {
+        console.log(`[CinePersona] 标题特征命中解说/博文/UGC，自动跳过:`, rawTitle);
+        ignoredReason = "TV_SERIES";
+        matchedMovie = null;
+        scrobbler.detach();
+      }
+      return;
+    }
+
+    // 5. Cleaned title must be at least 2 characters to avoid single-word false matches like "智人"
+    if (!cleanResult.title || cleanResult.title.length < 2) return;
+
+    // 6. Duration pre-filter: for UGC-heavy platforms (Bilibili /video/ path reached this far),
+    // demand the video is at least 40 minutes before even attempting a server match.
+    // This prevents short tech/finance opinion videos from triggering API calls.
+    const STREAMING_PLATFORMS_NEEDING_DURATION = ["哔哩哔哩", "腾讯视频", "爱奇艺", "优酷"];
+    const MIN_DURATION_FOR_MATCH = 40; // minutes
+    if (STREAMING_PLATFORMS_NEEDING_DURATION.includes(parser.name)) {
+      if (durationMin > 0 && durationMin < MIN_DURATION_FOR_MATCH) {
+        if (ignoredReason !== "TV_SERIES") {
+          console.log(`[CinePersona] 视频时长 ${durationMin} 分钟 < ${MIN_DURATION_FOR_MATCH} 分钟阈值，跳过匹配:`, rawTitle);
+          ignoredReason = "TV_SERIES";
+          matchedMovie = null;
+          scrobbler.detach();
+        }
+        return;
+      }
+      // If duration not yet loaded, wait for it to load before resolving
+      if (durationMin === 0) {
+        console.log(`[CinePersona] 等待视频时长加载后再匹配:`, cleanResult.title);
+        return;
+      }
+    }
 
     ignoredReason = null;
     console.log("[CinePersona] 识别片名:", cleanResult.title, "时长:", durationMin ? `${durationMin}分` : "待加载", "原始文本:", rawTitle);

@@ -12,47 +12,69 @@ const CineParsers = [
     getVideo: () => document.querySelector("video.bpx-player-video-wrap video, .bpx-player-container video, video"),
     isMoviePlayback: () => {
       const path = location.pathname;
-      // 首页、专栏、用户页、搜索页等一律不处理
-      const ALLOWED_PATHS = ["/video/", "/bangumi/play/", "/film/detail/", "/cheese/play/"];
-      if (!ALLOWED_PATHS.some((p) => path.startsWith(p))) {
-        return false;
-      }
-      // 番剧/剧集类型标签
-      if (path.includes("/bangumi/play/")) {
+
+      // --- /film/detail/ 是 B站电影专区，直接允许 ---
+      if (path.startsWith("/film/detail/")) return true;
+
+      // --- /bangumi/play/ 必须明确标记为"电影"类型才允许 ---
+      if (path.startsWith("/bangumi/play/")) {
         const typeLabel = document.querySelector(".media-type, [class*='media-type']");
-        if (typeLabel && !typeLabel.textContent.includes("电影")) {
-          return false;
-        }
+        // 若已渲染类型标签且不是电影，直接拒绝
+        if (typeLabel) return typeLabel.textContent.includes("电影");
+        // 尚未渲染时用标题二次校验
+        if (/第\s*\d+\s*[集期话回]|番剧|国创|电视剧/.test(document.title)) return false;
+        return true;
       }
-      // 标题中含剧集特征
-      if (/第\s*\d+\s*[集期话回]|番剧|国创|电视剧/.test(document.title)) {
+
+      // --- /video/ 是 UGC 内容，绝大多数不是电影，默认拒绝 ---
+      // 仅当视频页面 DOM 中有 B站电影频道的特征标记时才允许
+      if (path.startsWith("/video/")) {
+        // 有明确的电影/纪录片频道标签（极少数情况）
+        const channelTag = document.querySelector(".tag-link, [class*='channel-tag'], [class*='bili-tag']");
+        if (channelTag) {
+          const tagText = channelTag.textContent || "";
+          if (tagText.includes("电影") || tagText.includes("纪录片")) {
+            // 还需要排除短视频/解说/混剪
+            if (/第\s*\d+\s*[集期话回]|解说|混剪|预告|花絮|盘点|几分钟|电影解说|影视解说/.test(document.title)) return false;
+            return true;
+          }
+        }
+        // UGC /video/ 默认全部跳过，避免「智人TV」之类的标题被误匹配成电影
         return false;
       }
-      return true;
+
+      // 其他路径（首页、搜索、个人页等）一律不处理
+      return false;
     },
     getTitle: () => {
       const path = location.pathname;
-      // 只在实际视频/番剧/电影页提取标题，其他页面直接返回空
-      const ALLOWED_PATHS = ["/video/", "/bangumi/play/", "/film/detail/", "/cheese/play/"];
-      if (!ALLOWED_PATHS.some((p) => path.startsWith(p))) {
+
+      // 只在明确的电影播放路径提取标题
+      if (path.startsWith("/film/detail/") || path.startsWith("/bangumi/play/")) {
+        const bangumiTitle = document.querySelector(".media-title, .ep-title, [class*='media-title'], [class*='ep-info-title']");
+        if (bangumiTitle && bangumiTitle.textContent.trim()) {
+          return bangumiTitle.textContent.trim();
+        }
+        // 从 document.title 取（bangumi 页标题较可靠）
+        const cleaned = document.title.replace(/_哔哩哔哩_bilibili.*/i, "").trim();
+        if (cleaned && !cleaned.includes("哔哩哔哩") && !cleaned.includes("bilibili")) {
+          return cleaned;
+        }
         return "";
       }
-      // For Bangumi / Movies
-      const bangumiTitle = document.querySelector(".media-title, .ep-title, [class*='media-title'], [class*='ep-info-title']");
-      if (bangumiTitle && bangumiTitle.textContent.trim()) {
-        return bangumiTitle.textContent.trim();
+
+      // /video/ UGC 页面：除非已通过 isMoviePlayback 的极严格电影频道校验，否则不提标题
+      if (path.startsWith("/video/")) {
+        const channelTag = document.querySelector(".tag-link, [class*='channel-tag'], [class*='bili-tag']");
+        const tagText = channelTag ? (channelTag.textContent || "") : "";
+        if (!tagText.includes("电影") && !tagText.includes("纪录片")) return "";
+        const videoTitle = document.querySelector(".video-title, #viewbox_report h1, [class*='video-info-title']");
+        if (videoTitle && videoTitle.textContent.trim()) {
+          return videoTitle.textContent.trim();
+        }
+        return "";
       }
-      // General video title
-      const videoTitle = document.querySelector(".video-title, #viewbox_report h1, [class*='video-info-title']");
-      if (videoTitle && videoTitle.textContent.trim()) {
-        return videoTitle.textContent.trim();
-      }
-      // Fallback from document.title - only on known playback pages
-      const cleaned = document.title.replace(/_哔哩哔哩_bilibili.*/i, "").trim();
-      // Don't use it if it still contains B站 brand text
-      if (cleaned && !cleaned.includes("哔哩哔哩") && !cleaned.includes("bilibili")) {
-        return cleaned;
-      }
+
       return "";
     }
   },
