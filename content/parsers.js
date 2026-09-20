@@ -11,18 +11,32 @@ const CineParsers = [
     matches: () => location.hostname.includes("bilibili.com"),
     getVideo: () => document.querySelector("video.bpx-player-video-wrap video, .bpx-player-container video, video"),
     isMoviePlayback: () => {
-      if (location.pathname.includes("/bangumi/play/")) {
+      const path = location.pathname;
+      // 首页、专栏、用户页、搜索页等一律不处理
+      const ALLOWED_PATHS = ["/video/", "/bangumi/play/", "/film/detail/", "/cheese/play/"];
+      if (!ALLOWED_PATHS.some((p) => path.startsWith(p))) {
+        return false;
+      }
+      // 番剧/剧集类型标签
+      if (path.includes("/bangumi/play/")) {
         const typeLabel = document.querySelector(".media-type, [class*='media-type']");
         if (typeLabel && !typeLabel.textContent.includes("电影")) {
           return false;
         }
       }
+      // 标题中含剧集特征
       if (/第\s*\d+\s*[集期话回]|番剧|国创|电视剧/.test(document.title)) {
         return false;
       }
       return true;
     },
     getTitle: () => {
+      const path = location.pathname;
+      // 只在实际视频/番剧/电影页提取标题，其他页面直接返回空
+      const ALLOWED_PATHS = ["/video/", "/bangumi/play/", "/film/detail/", "/cheese/play/"];
+      if (!ALLOWED_PATHS.some((p) => path.startsWith(p))) {
+        return "";
+      }
       // For Bangumi / Movies
       const bangumiTitle = document.querySelector(".media-title, .ep-title, [class*='media-title'], [class*='ep-info-title']");
       if (bangumiTitle && bangumiTitle.textContent.trim()) {
@@ -33,7 +47,13 @@ const CineParsers = [
       if (videoTitle && videoTitle.textContent.trim()) {
         return videoTitle.textContent.trim();
       }
-      return document.title.replace(/_哔哩哔哩_bilibili.*/i, "").trim();
+      // Fallback from document.title - only on known playback pages
+      const cleaned = document.title.replace(/_哔哩哔哩_bilibili.*/i, "").trim();
+      // Don't use it if it still contains B站 brand text
+      if (cleaned && !cleaned.includes("哔哩哔哩") && !cleaned.includes("bilibili")) {
+        return cleaned;
+      }
+      return "";
     }
   },
 
@@ -105,6 +125,11 @@ const CineParsers = [
     matches: () => location.hostname.includes("iqiyi.com"),
     getVideo: () => document.querySelector("video.iqp-player-videotrack, .iqp-player video, #iqp-player video, [class*='player-videotrack'] video, video"),
     isMoviePlayback: () => {
+      const path = location.pathname;
+      // 爱奇艺只在播放页处理
+      if (!path.startsWith("/v_") && !path.startsWith("/w_") && !path.startsWith("/short")) {
+        return false;
+      }
       const docTitle = document.title || "";
       if (/(?:第\s*\d+\s*[集期话回]|\bE\d{1,3}\b|\bEP\d{1,3}\b|更新至\s*\d+\s*集|全\s*\d+\s*集)/i.test(docTitle)) {
         return false;
@@ -115,6 +140,10 @@ const CineParsers = [
       return true;
     },
     getTitle: () => {
+      const path = location.pathname;
+      if (!path.startsWith("/v_") && !path.startsWith("/w_") && !path.startsWith("/short")) {
+        return "";
+      }
       // 1. Check title inside iQiyi active player container or heading
       const selectors = [
         "h1.player-title", "h1.title-link", "h1[title]", "h1",
@@ -166,6 +195,11 @@ const CineParsers = [
     matches: () => location.hostname.includes("youku.com"),
     getVideo: () => document.querySelector("video.youku-film-player video, video.kui-video-player, #ykPlayer video, .video-layer video, video"),
     isMoviePlayback: () => {
+      const path = location.pathname;
+      // 优酷只在视频播放页处理
+      if (!path.startsWith("/v_show/") && !path.startsWith("/v/") && !path.startsWith("/play/")) {
+        return false;
+      }
       const docTitle = document.title || "";
       if (/第\s*\d+\s*[集期话回]|电视剧|网剧|连续剧|综艺/.test(docTitle)) {
         return false;
@@ -180,6 +214,10 @@ const CineParsers = [
       return true;
     },
     getTitle: () => {
+      const path = location.pathname;
+      if (!path.startsWith("/v_show/") && !path.startsWith("/v/") && !path.startsWith("/play/")) {
+        return "";
+      }
       // 1. Check inside the active film player overlay (e.g. Youku player top-left title)
       const playerTitle = document.querySelector(".kui-dashboard-title, .kui-video-title, #ykPlayer .video-title, .youku-film-player .video-title, .kui-dashboard-top-title");
       if (playerTitle && playerTitle.textContent.trim()) {
