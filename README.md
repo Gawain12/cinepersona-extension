@@ -33,7 +33,7 @@
 <p align="center">
   <img src="screenshots/douban-sync-preview.png" width="400" alt="豆瓣数据增量同步与本地离线备份" />
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="screenshots/settings-preview.png" width="400" alt="偏好设置与14大主流平台矩阵" />
+  <img src="screenshots/settings-masked.png" width="400" alt="偏好设置与14大主流平台矩阵" />
 </p>
 
 ---
