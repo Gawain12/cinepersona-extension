@@ -4,7 +4,7 @@
  */
 
 const CineParsers = [
-  // 1. Bilibili (B站 电影 / 电视剧 / 纪录片 / 视频)
+  // 1. Bilibili (B站 电影 / 纪录片 / 视频)
   {
     id: "bilibili",
     name: "哔哩哔哩",
@@ -12,50 +12,57 @@ const CineParsers = [
     getVideo: () => document.querySelector("video.bpx-player-video-wrap video, .bpx-player-container video, video"),
     isMoviePlayback: () => {
       const path = location.pathname;
+      const search = location.search;
 
-      // --- /film/detail/ 是 B站电影专区，直接允许 ---
-      if (path.startsWith("/film/detail/")) return true;
-
-      // --- /bangumi/play/ 必须明确标记为"电影"类型才允许 ---
-      if (path.startsWith("/bangumi/play/")) {
-        const typeLabel = document.querySelector(".media-type, [class*='media-type']");
-        // 若已渲染类型标签且不是电影，直接拒绝
-        if (typeLabel) return typeLabel.textContent.includes("电影");
-        // 尚未渲染时用标题二次校验
-        if (/第\s*\d+\s*[集期话回]|番剧|国创|电视剧/.test(document.title)) return false;
+      // 1. 官方电影专区与链接 (如 theme=movie 或 /film/detail/)
+      if (path.startsWith("/film/detail/") || search.includes("theme=movie")) {
         return true;
       }
 
-      // --- /video/ 是 UGC 内容，绝大多数不是电影，默认拒绝 ---
-      // 仅当视频页面 DOM 中有 B站电影频道的特征标记时才允许
-      if (path.startsWith("/video/")) {
-        // 有明确的电影/纪录片频道标签（极少数情况）
-        const channelTag = document.querySelector(".tag-link, [class*='channel-tag'], [class*='bili-tag']");
-        if (channelTag) {
-          const tagText = channelTag.textContent || "";
-          if (tagText.includes("电影") || tagText.includes("纪录片")) {
-            // 还需要排除短视频/解说/混剪
-            if (/第\s*\d+\s*[集期话回]|解说|混剪|预告|花絮|盘点|几分钟|电影解说|影视解说/.test(document.title)) return false;
-            return true;
-          }
+      // 2. /bangumi/play/ (官方番剧/电影/纪录片)
+      if (path.startsWith("/bangumi/play/")) {
+        // B站内部 season_type: 2 通常为电影 (Movie)
+        const typeLabel = document.querySelector(".media-type, [class*='media-type']");
+        if (typeLabel) {
+          const t = typeLabel.textContent.trim();
+          if (t.includes("电影")) return true;
+          if (t.includes("电视剧") || t.includes("番剧") || t.includes("国创") || t.includes("综艺")) return false;
         }
-        // UGC /video/ 默认全部跳过，避免「智人TV」之类的标题被误匹配成电影
-        return false;
+        if (/第\s*\d+\s*[集期话回]|番剧|国创|电视剧/.test(document.title)) {
+          return false;
+        }
+        return true;
       }
 
-      // 其他路径（首页、搜索、个人页等）一律不处理
+      // 3. /video/ (UP主上传的完整电影/第三方资源)
+      if (path.startsWith("/video/")) {
+        // 必须过滤短视频、解说、博文型长标题
+        const docTitle = document.title || "";
+        if (/第\s*\d+\s*[集期话回]|解说|混剪|预告|花絮|盘点|几分钟|短片|片段|采访|发布会/.test(docTitle)) {
+          return false;
+        }
+
+        // 冷门/第三方上传电影标题通常干净且不长 (通常不超过 25 个字符，如《肖申克的救赎》或 "肖申克的救赎 (1994) 国英双语")
+        // 如果标题包含明显的 UP 主博文长句/感叹号/问号，直接跳过
+        const rawTitle = (document.querySelector(".video-title, #viewbox_report h1")?.textContent || docTitle).trim();
+        if (rawTitle.length > 35 || /[！？!?,，]/.test(rawTitle)) {
+          return false;
+        }
+
+        return true;
+      }
+
       return false;
     },
     getTitle: () => {
       const path = location.pathname;
 
-      // 只在明确的电影播放路径提取标题
+      // 1. Bangumi / 电影专区
       if (path.startsWith("/film/detail/") || path.startsWith("/bangumi/play/")) {
         const bangumiTitle = document.querySelector(".media-title, .ep-title, [class*='media-title'], [class*='ep-info-title']");
         if (bangumiTitle && bangumiTitle.textContent.trim()) {
           return bangumiTitle.textContent.trim();
         }
-        // 从 document.title 取（bangumi 页标题较可靠）
         const cleaned = document.title.replace(/_哔哩哔哩_bilibili.*/i, "").trim();
         if (cleaned && !cleaned.includes("哔哩哔哩") && !cleaned.includes("bilibili")) {
           return cleaned;
@@ -63,16 +70,13 @@ const CineParsers = [
         return "";
       }
 
-      // /video/ UGC 页面：除非已通过 isMoviePlayback 的极严格电影频道校验，否则不提标题
+      // 2. /video/ (第三方上传电影)
       if (path.startsWith("/video/")) {
-        const channelTag = document.querySelector(".tag-link, [class*='channel-tag'], [class*='bili-tag']");
-        const tagText = channelTag ? (channelTag.textContent || "") : "";
-        if (!tagText.includes("电影") && !tagText.includes("纪录片")) return "";
         const videoTitle = document.querySelector(".video-title, #viewbox_report h1, [class*='video-info-title']");
         if (videoTitle && videoTitle.textContent.trim()) {
-          return videoTitle.textContent.trim();
+          const t = videoTitle.textContent.trim();
+          if (t.length <= 35) return t;
         }
-        return "";
       }
 
       return "";
@@ -598,16 +602,49 @@ const CineParsers = [
     }
   },
 
-  // 10. YouTube
+  // 10. YouTube (电影/官方购买及长片电影)
   {
     id: "youtube",
     name: "YouTube",
     matches: () => location.hostname.includes("youtube.com"),
     getVideo: () => document.querySelector("video.html5-main-video, video"),
+    isMoviePlayback: () => {
+      // 1. YouTube 官方电影/购买专区与标记 (Free with Ads / Buy or Rent / YouTube Movies)
+      const movieBadge = document.querySelector(
+        "ytd-badge-supported-renderer [aria-label*='Movie'], " +
+        "ytd-badge-supported-renderer [aria-label*='电影'], " +
+        "ytd-badge-supported-renderer [aria-label*='Free with ads'], " +
+        "ytd-badge-supported-renderer [aria-label*='购买或租借'], " +
+        "ytd-badge-supported-renderer [aria-label*='Buy or rent']"
+      );
+      if (movieBadge) return true;
+
+      // 2. 检查频道名或元数据 (例如 YouTube Movies & TV)
+      const channelName = document.querySelector("#channel-name, #owner-sub-count, ytd-channel-name")?.textContent || "";
+      if (channelName.includes("YouTube Movies") || channelName.includes("电影")) {
+        return true;
+      }
+
+      // 3. 普通视频：排除长博文、Vlog、短标题保护
+      const docTitle = document.title || "";
+      if (/ep\s*\d+|episode\s*\d+|trailer|teaser|clip|reaction|review|how to|vlog|highlight/i.test(docTitle)) {
+        return false;
+      }
+
+      const rawTitle = (document.querySelector("h1.ytd-watch-metadata yt-formatted-string, #title h1")?.textContent || docTitle).trim();
+      // 如果标题过长（如博主长标题）或者含疑问/感叹/长句，跳过
+      if (rawTitle.length > 40 || /[!?！？]/.test(rawTitle)) {
+        return false;
+      }
+
+      return true;
+    },
     getTitle: () => {
-      const titleEl = document.querySelector("h1.ytd-watch-metadata yt-formatted-string, #title h1, .ytp-title-link");
-      if (titleEl && titleEl.textContent.trim()) {
-        return titleEl.textContent.trim();
+      // YouTube 官方电影元数据
+      const officialTitle = document.querySelector("ytd-watch-metadata #title h1, h1.ytd-watch-metadata yt-formatted-string");
+      if (officialTitle && officialTitle.textContent.trim()) {
+        const t = officialTitle.textContent.trim();
+        if (t.length <= 40) return t;
       }
       return (document.title || "").replace(/[-_|\s]*YouTube.*$/i, "").trim();
     }
