@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="referrer" content="no-referrer" />
+  <title>CinePersona 影格</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 350px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0b0f19;
+      color: #f1f5f9;
+      padding: 14px;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(77, 138, 255, 0.15);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-svg {
+      width: 22px;
+      height: 22px;
+    }
+    .brand span {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: #f1f5f9;
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    .status-badge.online {
+      background: rgba(59, 130, 246, 0.18);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .status-badge.offline {
+      background: rgba(245, 158, 11, 0.16);
+      color: #f5b73d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin: 12px 0;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 6px 0;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #8e9eb5;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: #3b82f6;
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Tab Panes */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Cards */
+    .card {
+      background: #131d31;
+      border: 1px solid rgba(77, 138, 255, 0.16);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #8e9eb5;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Playing Tab Styles */
+    .movie-box {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .poster-wrap {
+      width: 52px;
+      height: 74px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .poster-wrap.clickable, .movie-title.clickable {
+      cursor: pointer;
+    }
+    .movie-title.clickable:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+    .poster-wrap.clickable:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .poster-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.3);
+    }
+    .movie-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .movie-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.15s;
+    }
+    .movie-meta {
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-top: 3px;
+    }
+    .movie-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .movie-badge.scrobbled {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .movie-badge.watching {
+      background: rgba(245, 158, 11, 0.18);
+      color: #f5b73d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Super-Compact Ratings Row (DB / IMDb / LB / CP) */
+    .movie-ratings-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 4px;
+      margin-top: 5px;
+      overflow-x: auto;
+    }
+    .rating-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    .rating-badge.douban {
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+    .rating-badge.imdb {
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+    }
+    .rating-badge.lboxd {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+    .rating-badge.cp {
+      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.14);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .user-profile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+    .user-name-text {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 130px;
+    }
+    .user-stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 11px;
+      color: #cbd5e1;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      margin-bottom: 10px;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-bottom: 4px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Rating Stars (Half-star & hover motion) */
+    .stars-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    .stars-track {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .star-item {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.18);
+      user-select: none;
+      line-height: 1;
+      width: 18px;
+      text-align: center;
+      transition: transform 0.1s;
+    }
+    .star-item.active {
+      color: #f5b73d;
+    }
+    .star-item.half {
+      background: linear-gradient(90deg, #f5b73d 50%, rgba(255, 255, 255, 0.18) 50%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    .star-text {
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    /* Review Textarea */
+    .review-textarea {
+      width: 100%;
+      height: 48px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(77, 138, 255, 0.18);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: #f1f5f9;
+      font-size: 11px;
+      resize: none;
+      outline: none;
+      margin-bottom: 8px;
+      font-family: inherit;
+    }
+    .review-textarea:focus {
+      border-color: #3b82f6;
+    }
+
+    /* Correction Link & Box */
+    .correct-link {
+      display: inline-block;
+      font-size: 10px;
+      color: #60a5fa;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .correct-link:hover {
+      text-decoration: underline;
+    }
+    .correct-box {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .correct-box.show {
+      display: block;
+    }
+    .correct-input-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .correct-input {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: 1px solid rgba(77, 138, 255, 0.2);
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      outline: none;
+    }
+    .correct-input:focus {
+      border-color: #3b82f6;
+    }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: none;
+      background: #3b82f6;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-sm:hover {
+      background: #2563eb;
+    }
+    .correct-results {
+      max-height: 140px;
+      overflow-y: auto;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .correct-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .correct-item:hover {
+      background: rgba(59, 130, 246, 0.25);
+    }
+    .correct-item-thumb {
+      width: 22px;
+      height: 30px;
+      border-radius: 3px;
+      object-fit: cover;
+      background: #333;
+      flex-shrink: 0;
+    }
+    .correct-item-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .correct-item-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .correct-item-sub {
+      font-size: 10px;
+      color: #8e9eb5;
+    }
+
+    /* Empty state */
+    .empty-playing {
+      padding: 24px 12px;
+      text-align: center;
+      color: #8e9eb5;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .empty-icon {
+      font-size: 28px;
+      margin-bottom: 6px;
+      color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Douban Tab Styles */
+    .douban-user-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .douban-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(77, 138, 255, 0.25);
+      background: #1e293b;
+    }
+    .douban-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .douban-stat-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10.5px;
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 999px;
+      padding: 1px 7px;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .douban-id {
+      font-size: 10px;
+      color: #8e9eb5;
+      margin-top: 2px;
+    }
+    .douban-link {
+      color: #60a5fa;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .douban-link:hover {
+      text-decoration: underline;
+    }
+    .douban-sync-history {
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sync-mode-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .sync-mode-btn {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 11px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sync-mode-btn.active {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: #3b82f6;
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    .sync-log-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      min-height: 48px;
+      max-height: 80px;
+      overflow-y: auto;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+
+    /* Settings Tab Styles */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .setting-select {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(77, 138, 255, 0.2);
+      color: #60a5fa;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+    .setting-select option {
+      background: #0b0f19;
+      color: #fff;
+    }
+    .platforms-summary {
+      font-size: 11px;
+      color: #8e9eb5;
+      line-height: 1.6;
+    }
+    .platforms-detail {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      display: none;
+    }
+    .platforms-detail.show {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+    .platform-item {
+      font-size: 11px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .platform-item::before {
+      content: "•";
+      color: #3b82f6;
+      font-weight: bold;
+    }
+    .toggle-platforms {
+      font-size: 11px;
+      color: #60a5fa;
+      cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    .toggle-platforms:hover {
+      text-decoration: underline;
+    }
+
+    /* Buttons */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #3b82f6;
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.25);
+    }
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .btn-warning {
+      background: #f59e0b;
+      color: #0b0f19;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+    }
+    .btn-warning:hover {
+      background: #d97706;
+    }
+    .footer {
+      font-size: 10px;
+      color: #64748b;
+      text-align: center;
+      margin-top: 10px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.96); opacity: 0.75; }
+      50% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(0.96); opacity: 0.75; }
+    }
+    .loading-pulse {
+      animation: pulse-ring 1.8s infinite ease-in-out;
+    }
+    .user-profile-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(77, 138, 255, 0.3);
+      background: #1e293b;
+    }
+    .user-avatar-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #60a5fa;
+      font-size: 16px;
+    }
+    .user-name-link {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .user-name-link:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+    .user-stat-badge {
+      display: inline-block;
+      font-size: 11px;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .user-stat-badge:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <a href="https://cinepersona.com" target="_blank" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;" title="打开影格 CinePersona 官网">
+        <img src="../icons/cinepersona-icon.png" style="width: 22px; height: 22px; border-radius: 6px; object-fit: contain;" alt="CinePersona" />
+        <span>CinePersona</span>
+      </a>
+    </div>
+    <span id="authStatus" class="status-badge offline">检测中...</span>
+  </div>
+
+  <!-- Tab Switcher (3 Tabs) -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-playing">当前观影</button>
+    <button class="tab-btn" data-tab="tab-douban">🔄 豆瓣同步</button>
+    <button class="tab-btn" data-tab="tab-settings">偏好设置</button>
+  </div>
+
+  <!-- Tab 1: Now Playing -->
+  <div id="tab-playing" class="tab-content active">
+    <div id="playingContainer">
+      <div class="card empty-playing">
+        <div class="empty-icon">🎬</div>
+        <div>正在检查当前页面播放状态...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Douban Sync -->
+  <div id="tab-douban" class="tab-content">
+    <div class="card" id="doubanAccountCard">
+      <div class="card-title">豆瓣会话状态</div>
+      <div id="doubanAccountInfo">
+        <div style="font-size: 12px; color: #8e9eb5;">正在检测豆瓣登录 Cookie...</div>
+      </div>
+      <div class="douban-sync-history" id="doubanSyncHistory">
+        <span id="doubanSyncHistoryText">上次同步：暂无记录</span>
+        <span id="doubanResetAnchorBtn" class="toggle-platforms" style="font-size: 10px; color: #8e9eb5; cursor: pointer;" title="清空本地库，从头重新抓取">清空本地库 ↺</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">豆瓣同步与备份</div>
+      <div class="sync-log-box" id="doubanSyncLog">就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。</div>
+
+      <button class="btn btn-primary" id="startDoubanSyncBtn">🔄 同步最新豆瓣数据</button>
+      <button class="btn btn-secondary" id="downloadDoubanCsvBtn" style="margin-top: 8px;">📥 导出本地完整 CSV 备份</button>
+      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-secondary" id="openImportCenterBtn" style="display: none; margin-top: 8px; text-decoration: none;">👉 前往影格【导入中心】上传入库 ↗</a>
+      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-warning" id="openUnmatchedBtn" style="display: none; margin-top: 8px;">👉 前往影格处理未匹配项 ↗</a>
+    </div>
+  </div>
+
+  <!-- Tab 3: Settings -->
+  <div id="tab-settings" class="tab-content">
+    <!-- Account Card -->
+    <div class="card" id="userBox">
+      <div class="card-title">当前绑定账号</div>
+      <div class="card-content" id="userInfo" style="font-size: 12px; line-height: 1.5;">检查登录会话中...</div>
+    </div>
+
+    <!-- Scrobble Timing Preference -->
+    <div class="card">
+      <div class="card-title">打卡与弹窗机制</div>
+      <div class="setting-row">
+        <span>打卡时机：</span>
+        <select id="scrobbleTiming" class="setting-select">
+          <option value="0.80">播放达 80% 时</option>
+          <option value="0.90">播放达 90% 时</option>
+          <option value="1.00">播放完全结束时</option>
+          <option value="manual">仅静默入库（不弹窗）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Supported Platforms -->
+    <div class="card">
+      <div class="card-title">支持平台</div>
+      <div class="platforms-summary">
+        已覆盖 <b>14 大主流</b> 网盘与流媒体（网盘/爱优腾B站/Netflix/YouTube等）。
+      </div>
+      <span id="togglePlatformsBtn" class="toggle-platforms">查看全部支持平台 ▾</span>
+      <div class="platforms-detail" id="platformsDetail">
+        <span class="platform-item">哔哩哔哩 (B站)</span>
+        <span class="platform-item">腾讯视频 / 爱奇艺</span>
+        <span class="platform-item">优酷 / 芒果TV</span>
+        <span class="platform-item">阿里云盘 / 夸克网盘</span>
+        <span class="platform-item">百度网盘 / 115网盘</span>
+        <span class="platform-item">Netflix (网飞)</span>
+        <span class="platform-item">YouTube</span>
+        <span class="platform-item">Prime Video</span>
+        <span class="platform-item">Disney+</span>
+        <span class="platform-item">Max (HBO Max)</span>
+        <span class="platform-item">Apple TV+</span>
+      </div>
+    </div>
+
+    <a href="https://cinepersona.com/dna" target="_blank" class="btn btn-primary" id="mainAction">查看我的电影 DNA</a>
+    <a href="https://cinepersona.com/settings" target="_blank" class="btn btn-secondary">影格设置中心</a>
+  </div>
+
+  <div class="footer">智能片名解析 · 丝滑零打扰</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
