@@ -12,6 +12,15 @@ const bgT = (zh, en) => globalThis.CinePersonaI18n && typeof globalThis.CinePers
 
 // In-memory cache for mapping (cleanTitle+year -> movie)
 const searchCache = new Map();
+// Avoid repeatedly retrying titles that are not in the library. This is especially
+// important for cloud-drive pages whose file title remains visible while polling.
+const negativeSearchCache = new Map();
+const NEGATIVE_SEARCH_TTL_MS = 5 * 60 * 1000;
+// Popup quick-search cache. It uses the bounded local search endpoint only;
+// it never invokes TMDB fallback or auto-import.
+const quickSearchCache = new Map();
+const quickSearchInFlight = new Map();
+const QUICK_SEARCH_TTL_MS = 2 * 60 * 1000;
 
 // Tab-level active movie map for cross-frame coordination (tabId -> { movie, activity, timestamp })
 const tabMovieMap = new Map();
@@ -20,55 +29,220 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   tabMovieMap.delete(tabId);
 });
 
-// Ensure declarativeNetRequest rules for Douban Referer are active
-if (chrome.declarativeNetRequest) {
-  chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [1001, 1002, 1003],
-    addRules: [
-      {
-        id: 1001,
-        priority: 1,
-        action: {
-          type: "modifyHeaders",
-          requestHeaders: [
-            { header: "Referer", operation: "set", value: "https://m.douban.com/" }
-          ]
-        },
-        condition: {
-          urlFilter: "||m.douban.com",
-          resourceTypes: ["xmlhttprequest", "other", "sub_frame", "main_frame"]
-        }
-      },
-      {
-        id: 1002,
-        priority: 1,
-        action: {
-          type: "modifyHeaders",
-          requestHeaders: [
-            { header: "Referer", operation: "set", value: "https://www.douban.com/" }
-          ]
-        },
-        condition: {
-          urlFilter: "||doubanio.com",
-          resourceTypes: ["image", "xmlhttprequest", "other"]
-        }
-      },
-      {
-        id: 1003,
-        priority: 1,
-        action: {
-          type: "modifyHeaders",
-          requestHeaders: [
-            { header: "Referer", operation: "set", value: "https://www.douban.com/" }
-          ]
-        },
-        condition: {
-          urlFilter: "||movie.douban.com",
-          resourceTypes: ["xmlhttprequest", "other"]
+const DOUBAN_PERMISSION_ORIGINS = [
+  "https://*.douban.com/*",
+  "https://*.doubanio.com/*"
+];
+const DOUBAN_SESSION_URLS = [
+  "https://www.douban.com/",
+  "https://m.douban.com/",
+  "https://movie.douban.com/",
+  "https://accounts.douban.com/"
+];
+const DOUBAN_SESSION_ORIGIN_PATTERNS = [
+  "https://*.douban.com/*",
+  "https://douban.com/*"
+];
+const DOUBAN_SESSION_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
+const DOUBAN_RULE_IDS = [1001, 1002, 1003];
+
+async function hasDoubanPermissions() {
+  if (!chrome.permissions) return false;
+  try {
+    if (chrome.permissions.getAll) {
+      const granted = await chrome.permissions.getAll();
+      const hasCookiePermission = (granted.permissions || []).includes("cookies");
+      const hasDoubanOrigin = (granted.origins || []).some((origin) =>
+        origin === "<all_urls>" || DOUBAN_SESSION_ORIGIN_PATTERNS.includes(origin)
+      );
+      return hasCookiePermission && hasDoubanOrigin;
+    }
+    return await chrome.permissions.contains({
+      permissions: ["cookies"],
+      origins: ["https://*.douban.com/*"]
+    });
+  } catch (e) {
+    return false;
+  }
+}
+
+async function isDoubanConnectorActive() {
+  const hasPerm = await hasDoubanPermissions();
+  if (!hasPerm) return false;
+  try {
+    const { doubanConnectorEnabled = true } = await chrome.storage.local.get(["doubanConnectorEnabled"]);
+    return Boolean(doubanConnectorEnabled);
+  } catch (e) {
+    return hasPerm;
+  }
+}
+
+async function findDoubanCookie(name) {
+  if (!chrome.cookies?.get) return null;
+
+  // When the popup is opened over a Douban tab, query that exact tab URL
+  // first so Edge uses the same profile/store as the page the user is viewing.
+  try {
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    for (const tab of tabs || []) {
+      if (!/^https:\/\/(?:[^/]+\.)?douban\.com\//i.test(tab.url || "")) continue;
+      const cookie = await chrome.cookies.get({ url: tab.url, name });
+      if (cookie?.value) return cookie;
+    }
+  } catch (e) {}
+
+  // Prefer URL-scoped lookup. It follows the browser's real cookie matching
+  // rules and also works when the cookie is not exposed by a domain query.
+  for (const url of DOUBAN_SESSION_URLS) {
+    try {
+      const cookie = await chrome.cookies.get({ url, name });
+      if (cookie?.value) return cookie;
+    } catch (e) {}
+  }
+
+  // Keep a domain/name fallback for browser versions that handle URL lookup
+  // differently. Cookie values never leave this service worker.
+  try {
+    const cookies = await chrome.cookies.getAll({ name });
+    const cookie = cookies.find((item) => /(^|\.)douban\.com$/i.test(item.domain || "") && item.value);
+    if (cookie) return cookie;
+  } catch (e) {}
+
+  // A separately enabled incognito cookie store is not always the default
+  // store used by the service worker. Try it only after the normal lookup.
+  if (chrome.cookies.getAllCookieStores) {
+    try {
+      const stores = await chrome.cookies.getAllCookieStores();
+      for (const store of stores) {
+        for (const url of DOUBAN_SESSION_URLS) {
+          try {
+            const cookie = await chrome.cookies.get({ url, name, storeId: store.id });
+            if (cookie?.value) return cookie;
+          } catch (e) {}
         }
       }
-    ]
-  }).catch(() => {});
+    } catch (e) {}
+  }
+
+  return null;
+}
+
+async function fetchDoubanCurrentUser() {
+  const probes = [
+    {
+      url: "https://m.douban.com/rexxar/api/v2/user/~me",
+      referer: "https://m.douban.com/mine/"
+    },
+    {
+      url: "https://www.douban.com/j/mine/basic",
+      referer: "https://www.douban.com/"
+    }
+  ];
+
+  for (const probe of probes) {
+    try {
+      const response = await fetch(probe.url, {
+        headers: {
+          "Referer": probe.referer,
+          "User-Agent": DOUBAN_SESSION_USER_AGENT
+        },
+        credentials: "include"
+      });
+      if (!response.ok) continue;
+
+      const payload = await response.json();
+      const user = payload?.user || payload;
+      const uid = String(user?.id || user?.uid || payload?.id || payload?.uid || "").trim();
+      if (!uid) continue;
+
+      return {
+        uid,
+        name: user?.name || user?.nickname || "",
+        avatar: user?.avatar || user?.avatar_url || user?.loc?.avatar || ""
+      };
+    } catch (e) {}
+  }
+
+  return null;
+}
+
+async function updateDoubanRules(enabled) {
+  if (!chrome.declarativeNetRequest?.updateDynamicRules) return;
+
+  const addRules = enabled ? [
+    {
+      id: 1001,
+      priority: 1,
+      action: {
+        type: "modifyHeaders",
+        requestHeaders: [
+          { header: "Referer", operation: "set", value: "https://m.douban.com/" }
+        ]
+      },
+      condition: {
+        urlFilter: "||m.douban.com",
+        resourceTypes: ["xmlhttprequest", "other", "sub_frame", "main_frame"]
+      }
+    },
+    {
+      id: 1002,
+      priority: 1,
+      action: {
+        type: "modifyHeaders",
+        requestHeaders: [
+          { header: "Referer", operation: "set", value: "https://www.douban.com/" }
+        ]
+      },
+      condition: {
+        urlFilter: "||doubanio.com",
+        resourceTypes: ["image", "xmlhttprequest", "other"]
+      }
+    },
+    {
+      id: 1003,
+      priority: 1,
+      action: {
+        type: "modifyHeaders",
+        requestHeaders: [
+          { header: "Referer", operation: "set", value: "https://www.douban.com/" }
+        ]
+      },
+      condition: {
+        urlFilter: "||movie.douban.com",
+        resourceTypes: ["xmlhttprequest", "other"]
+      }
+    }
+  ] : [];
+
+  try {
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: DOUBAN_RULE_IDS,
+      addRules
+    });
+  } catch (e) {
+    // Rules are only needed after the user grants the optional Douban access.
+    console.warn("[CinePersona] Douban request rules unavailable:", e.message);
+  }
+}
+
+async function syncDoubanRules() {
+  await updateDoubanRules(await isDoubanConnectorActive());
+}
+
+syncDoubanRules();
+
+if (chrome.permissions?.onAdded) {
+  chrome.permissions.onAdded.addListener(() => syncDoubanRules());
+}
+if (chrome.permissions?.onRemoved) {
+  chrome.permissions.onRemoved.addListener(() => syncDoubanRules());
+}
+if (chrome.storage?.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.doubanConnectorEnabled) {
+      syncDoubanRules();
+    }
+  });
 }
 
 // Douban Sync State & Functions
@@ -84,32 +258,48 @@ let doubanSyncState = {
 
 async function checkDoubanSession() {
   try {
-    // 1. Search cookies across .douban.com or douban.com
-    const cookies = await chrome.cookies.getAll({ domain: "douban.com" });
-    let dbcl2Cookie = cookies.find((c) => c.name === "dbcl2");
-    if (!dbcl2Cookie) {
-      const allCookies = await chrome.cookies.getAll({ name: "dbcl2" });
-      dbcl2Cookie = allCookies.find((c) => (c.domain || "").includes("douban.com"));
+    if (!(await isDoubanConnectorActive())) {
+      return { enabled: false, loggedIn: false };
     }
 
-    if (!dbcl2Cookie || !dbcl2Cookie.value) {
-      return { loggedIn: false };
+    // dbcl2 normally contains the user id, but newer/alternate Douban
+    // sessions can still be valid with only ck available. In that case use
+    // Douban's current-user endpoint instead of declaring the browser logged
+    // out just because dbcl2 is absent.
+    const dbcl2Cookie = await findDoubanCookie("dbcl2");
+    const ckCookie = dbcl2Cookie ? null : await findDoubanCookie("ck");
+    let uidFromCookie = "";
+    if (dbcl2Cookie?.value) {
+      const val = dbcl2Cookie.value.replace(/"/g, "");
+      uidFromCookie = val.split(":")[0].trim();
     }
-
-    const val = dbcl2Cookie.value.replace(/"/g, "");
-    const parts = val.split(":");
-    const uidFromCookie = parts[0];
-    if (!uidFromCookie) return { loggedIn: false };
 
     let userName = "";
     let userAvatar = "";
+    if (!uidFromCookie) {
+      const currentUser = await fetchDoubanCurrentUser();
+      if (currentUser?.uid) {
+        uidFromCookie = currentUser.uid;
+        userName = currentUser.name;
+        userAvatar = currentUser.avatar;
+      }
+    }
+
+    if (!uidFromCookie) {
+      return {
+        loggedIn: false,
+        reason: dbcl2Cookie || ckCookie ? "SESSION_LOOKUP_FAILED" : "NO_DOUBAN_SESSION"
+      };
+    }
 
     // 2. Query Rexxar API for the specific user ID with mobile headers & credentials
     try {
       const uRes = await fetch(`https://m.douban.com/rexxar/api/v2/user/${uidFromCookie}`, {
         headers: {
           "Referer": "https://m.douban.com/",
-          "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+          "User-Agent": DOUBAN_SESSION_USER_AGENT,
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
         },
         credentials: "include"
       });
@@ -130,7 +320,7 @@ async function checkDoubanSession() {
         const meRes = await fetch("https://m.douban.com/rexxar/api/v2/user/~me", {
           headers: {
             "Referer": "https://m.douban.com/mine/",
-            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+            "User-Agent": DOUBAN_SESSION_USER_AGENT
           },
           credentials: "include"
         });
@@ -186,9 +376,24 @@ async function checkDoubanSession() {
     // 5. Query local database stats
     const localDbKey = `douban_db_${uidFromCookie}`;
     const stored = await chrome.storage.local.get([localDbKey]);
-    const localDb = stored[localDbKey] || { items: [], watchedCount: 0, wishCount: 0 };
+    const localDb = {
+      items: [],
+      top10: [],
+      reviews: [],
+      reviewCount: 0,
+      watchedCount: 0,
+      wishCount: 0,
+      ...(stored[localDbKey] || {})
+    };
     let watchedCount = localDb.watchedCount || 0;
     let wishCount = localDb.wishCount || 0;
+    const commentCount = (localDb.items || []).filter((item) => String(item.u_c || "").trim()).length;
+    const itemReviewCount = (Array.isArray(localDb.items) ? localDb.items : [])
+      .filter((item) => String(item.u_c || "").includes("【影评"))
+      .length;
+    const storedReviewCount = Array.isArray(localDb.reviews) ? localDb.reviews.length : 0;
+    const reviewCount = Math.max(itemReviewCount, storedReviewCount, Number(localDb.reviewCount || 0));
+    const top10Count = Array.isArray(localDb.top10) ? localDb.top10.length : 0;
 
     // If localDb is empty, query Douban Rexxar user interests count
     if (watchedCount === 0 && wishCount === 0) {
@@ -216,10 +421,13 @@ async function checkDoubanSession() {
       doubanId: uidFromCookie,
       watchedCount,
       wishCount,
+      commentCount,
+      reviewCount,
+      top10Count,
       localDbCount: localDb.items?.length || 0
     };
   } catch (err) {
-    return { loggedIn: false, error: err.message };
+    return { loggedIn: false, reason: "CHECK_FAILED", error: err.message };
   }
 }
 
@@ -229,7 +437,16 @@ const esc = (t) => '"' + String(t || "").replace(/"/g, '""').replace(/\n/g, " ")
 async function getLocalDoubanDb(uid) {
   const key = `douban_db_${uid}`;
   const res = await chrome.storage.local.get([key]);
-  return res[key] || { items: [], lastSyncTime: null, watchedCount: 0, wishCount: 0 };
+  return {
+    items: [],
+    top10: [],
+    reviews: [],
+    reviewCount: 0,
+    lastSyncTime: null,
+    watchedCount: 0,
+    wishCount: 0,
+    ...(res[key] || {})
+  };
 }
 
 async function saveLocalDoubanDb(uid, db) {
@@ -237,7 +454,7 @@ async function saveLocalDoubanDb(uid, db) {
   await chrome.storage.local.set({ [key]: db });
 }
 
-function generateCsvFromItems(items) {
+function generateCsvFromItems(items, top10 = []) {
   const cols = ["Category","Douban ID","Type","Title","Year","Directors","Actors","Genres","Region","Douban Rating","Douban Votes","Your Rating","Your Comment","Date Rated"];
   const csvRows = [cols.join(",")];
   items.forEach((o) => {
@@ -247,11 +464,160 @@ function generateCsvFromItems(items) {
       esc(o.db_v), esc(o.u_r), esc(o.u_c), esc(o.date)
     ].join(","));
   });
+  if (top10.length > 0) {
+    csvRows.push("");
+    csvRows.push(esc("=== TOP 10 MOVIES ==="));
+    csvRows.push(["Rank", "Douban ID", "Title", "Comment"].map(esc).join(","));
+    top10.forEach((item) => {
+      csvRows.push([esc(item.rank), esc(item.id), esc(item.title), esc(item.comment)].join(","));
+    });
+  }
   return "\uFEFF" + csvRows.join("\n");
+}
+
+const DOUBAN_PAGE_SIZE = 50;
+const DOUBAN_REQUEST_DELAY_MIN = 700;
+const DOUBAN_REQUEST_DELAY_MAX = 1200;
+const waitDoubanRequest = () => wait(
+  DOUBAN_REQUEST_DELAY_MIN
+  + Math.floor(Math.random() * (DOUBAN_REQUEST_DELAY_MAX - DOUBAN_REQUEST_DELAY_MIN + 1))
+);
+
+function cleanDoubanText(value) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function fetchDoubanReviews(uid, isFirstTime) {
+  const reviewMap = new Map();
+  let start = 0;
+
+  while (true) {
+    try {
+      const res = await fetch("https://m.douban.com/rexxar/api/v2/user/" + uid + "/reviews?count=" + DOUBAN_PAGE_SIZE + "&start=" + start, {
+        headers: {
+          "Referer": "https://m.douban.com/",
+          "User-Agent": DOUBAN_SESSION_USER_AGENT,
+          "Accept": "application/json",
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "include"
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      const reviews = Array.isArray(data.reviews)
+        ? data.reviews
+        : (Array.isArray(data.items) ? data.items : []);
+      if (reviews.length === 0) break;
+
+      for (const review of reviews) {
+        const subject = review.subject && typeof review.subject === "object" ? review.subject : {};
+        const subjectId = String(
+          subject.id
+          || review.subject_id
+          || review.subjectId
+          || review.movie_id
+          || ""
+        ).trim();
+        if (!subjectId || reviewMap.has(subjectId)) continue;
+        const title = cleanDoubanText(review.title || review.name);
+        const abstract = cleanDoubanText(review.abstract || review.content || review.summary || review.text);
+        if (!abstract && !title) continue;
+        const prefix = title && title !== "无题" && title !== "1" ? "【影评：" + title + "】 " : "【影评】 ";
+        reviewMap.set(subjectId, (prefix + abstract).trim());
+      }
+
+      // Incremental sync only needs the newest review page; first sync gets
+      // the complete review list with the same sequential pacing as marks.
+      const total = Number(data.total);
+      if (
+        !isFirstTime
+        || (Number.isFinite(total) && start + DOUBAN_PAGE_SIZE >= total)
+        || reviews.length < DOUBAN_PAGE_SIZE
+      ) break;
+      start += DOUBAN_PAGE_SIZE;
+      await waitDoubanRequest();
+    } catch (e) {
+      break;
+    }
+  }
+
+  return reviewMap;
+}
+
+async function fetchDoubanTop10(uid) {
+  try {
+    // Douban's mobile client includes both the session ck and for_mobile.
+    // The public endpoint may work without them, but logged-in extension
+    // requests can otherwise return an empty/non-equivalent response.
+    const ckCookie = await findDoubanCookie("ck");
+    const params = new URLSearchParams({ type: "movie", count: "10", for_mobile: "1" });
+    if (ckCookie?.value) params.set("ck", ckCookie.value);
+    const res = await fetch("https://m.douban.com/rexxar/api/v2/user/" + uid + "/subject_selections?" + params.toString(), {
+      headers: {
+        "Referer": "https://m.douban.com/",
+        "X-Override-Referer": "https://m.douban.com/mine/",
+        "User-Agent": DOUBAN_SESSION_USER_AGENT,
+        "Accept": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      credentials: "include"
+    });
+    if (!res.ok) {
+      console.warn("[CinePersona] Douban Top10 request failed:", res.status);
+      return [];
+    }
+    const data = await res.json();
+    const selections = Array.isArray(data.datas)
+      ? data.datas
+      : (data.datas && typeof data.datas === "object"
+        ? Object.values(data.datas)
+        : (Array.isArray(data.data) ? data.data : []));
+    const movieSelection = selections.find((selection) => {
+      const category = String(selection.category || selection.type || "").toLowerCase();
+      return category === "movie" || category === "movies";
+    }) || selections.find((selection) => Array.isArray(selection.items) && selection.items.length > 0);
+    const items = Array.isArray(movieSelection?.items) ? movieSelection.items : [];
+    return items.slice(0, 10).map((item, index) => ({
+      rank: index + 1,
+      id: String(
+        item.subject?.id
+        || item.subject_id
+        || item.subjectId
+        || item.id
+        || ""
+      ),
+      title: cleanDoubanText(item.subject?.title || item.title || item.name),
+      comment: cleanDoubanText(item.comment || item.note || item.reason)
+    })).filter((item) => item.id || item.title);
+  } catch (e) {
+    return [];
+  }
 }
 
 async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowCloudSync = false) {
   if (doubanSyncState.status === "syncing") return doubanSyncState;
+
+  if (!(await isDoubanConnectorActive())) {
+    doubanSyncState = {
+      status: "error",
+      cloudSyncRequested: Boolean(allowCloudSync),
+      cloudSyncStatus: "not_requested",
+      message: bgT("请先在数据工具中开启豆瓣连接器。", "Enable the Douban connector in data tools first."),
+      itemCount: 0,
+      totalCount: 0,
+      watchedCount: 0,
+      wishCount: 0,
+      commentCount: 0,
+      reviewCount: 0,
+      top10Count: 0,
+      csvData: null,
+      error: "Douban connector is inactive or permissions are not granted"
+    };
+    return doubanSyncState;
+  }
 
   doubanSyncState = {
     status: "syncing",
@@ -262,6 +628,9 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
     totalCount: 0,
     watchedCount: 0,
     wishCount: 0,
+    commentCount: 0,
+    reviewCount: 0,
+    top10Count: 0,
     csvData: null,
     error: null
   };
@@ -301,11 +670,13 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
         let batch = [];
         try {
           // 1. Try Rexxar API
-          const url = `https://m.douban.com/rexxar/api/v2/user/${uid}/interests?type=movie&count=50&status=${status}&start=${st}`;
+          const url = "https://m.douban.com/rexxar/api/v2/user/" + uid + "/interests?type=movie&count=" + DOUBAN_PAGE_SIZE + "&status=" + status + "&start=" + st;
           const res = await fetch(url, {
             headers: {
               "Referer": "https://m.douban.com/",
-              "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+              "User-Agent": DOUBAN_SESSION_USER_AGENT,
+              "Accept": "application/json",
+              "X-Requested-With": "XMLHttpRequest"
             },
             credentials: "include"
           });
@@ -405,27 +776,66 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
           }
         }
 
-        st += 50;
-        await wait(300);
+        st += DOUBAN_PAGE_SIZE;
+        await waitDoubanRequest();
       }
     };
 
     await fetchCategoryInterests("done", "Done", "看过");
     await fetchCategoryInterests("mark", "Mark", "想看");
 
+    const newItemIndex = new Map(newItems.map((item, index) => [`${item.cat}_${item.id}`, index]));
+    const fetchedReviewMap = await fetchDoubanReviews(uid, isFirstTime);
+    const reviewMap = new Map();
+    (Array.isArray(localDb.reviews) ? localDb.reviews : []).forEach((review) => {
+      const id = String(review?.id || review?.subjectId || "").trim();
+      const text = cleanDoubanText(review?.text || review?.content);
+      if (id && text) reviewMap.set(id, text);
+    });
+    fetchedReviewMap.forEach((text, id) => reviewMap.set(id, text));
+    for (const [subjectId, reviewText] of reviewMap.entries()) {
+      for (const category of ["Done", "Mark"]) {
+        const key = category + "_" + subjectId;
+        const item = itemMap.get(key);
+        if (!item || item.u_c === reviewText || String(item.u_c || "").includes(reviewText)) continue;
+        const mergedItem = {
+          ...item,
+          u_c: item.u_c ? item.u_c + " | " + reviewText : reviewText
+        };
+        itemMap.set(key, mergedItem);
+        if (newItemIndex.has(key)) newItems[newItemIndex.get(key)] = mergedItem;
+      }
+    }
+
+    await waitDoubanRequest();
+    const fetchedTop10 = await fetchDoubanTop10(uid);
+    const top10 = fetchedTop10.length > 0
+      ? fetchedTop10
+      : (Array.isArray(localDb.top10) ? localDb.top10 : []);
+
     // Rebuild sorted array
     const allSortedItems = Array.from(itemMap.values()).sort((a, b) => (b.date || "").localeCompare(a.date || ""));
     const watchedCount = allSortedItems.filter((x) => x.cat === "Done").length;
     const wishCount = allSortedItems.filter((x) => x.cat === "Mark").length;
+    const commentCount = allSortedItems.filter((x) => String(x.u_c || "").trim()).length;
+    const itemReviewCount = allSortedItems
+      .filter((item) => String(item.u_c || "").includes("【影评"))
+      .length;
+    const reviewEntries = Array.from(reviewMap.entries()).map(([id, text]) => ({ id, text }));
+    const reviewCount = Math.max(reviewEntries.length, itemReviewCount);
+    const top10Count = top10.length;
 
     localDb.items = allSortedItems;
+    localDb.top10 = top10;
+    localDb.reviews = reviewEntries;
+    localDb.reviewCount = reviewCount;
     localDb.watchedCount = watchedCount;
     localDb.wishCount = wishCount;
     localDb.lastSyncTime = new Date().toISOString();
     await saveLocalDoubanDb(uid, localDb);
 
     // Generate full CSV for the entire local database
-    const fullCsvData = generateCsvFromItems(allSortedItems);
+    const fullCsvData = generateCsvFromItems(allSortedItems, top10);
     await chrome.storage.local.set({
       latestDoubanCsv: fullCsvData,
       doubanLastSyncTime: localDb.lastSyncTime
@@ -514,6 +924,9 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
       totalCount: allSortedItems.length,
       watchedCount,
       wishCount,
+      commentCount,
+      reviewCount,
+      top10Count,
       lastSyncTime: localDb.lastSyncTime,
       csvData: fullCsvData,
       error: null
@@ -529,6 +942,9 @@ async function executeDoubanSmartSync(uid, apiBase = DEFAULT_API_BASE, allowClou
       totalCount: 0,
       watchedCount: 0,
       wishCount: 0,
+      commentCount: 0,
+      reviewCount: 0,
+      top10Count: 0,
       csvData: null,
       error: err.message
     };
@@ -646,9 +1062,15 @@ async function getMovieDetailRatings(movieId, apiBase = DEFAULT_API_BASE) {
 /**
  * Perform single search request
  */
-async function executeSearch(query, apiBase) {
+async function executeSearch(query, apiBase, options = {}) {
   try {
-    const res = await fetch(`${apiBase}/v1/search?q=${encodeURIComponent(query)}&locale=zh`, {
+    const params = new URLSearchParams({ q: query, locale: "zh" });
+    if (Number.isInteger(options.limit) && options.limit > 0) {
+      params.set("limit", String(options.limit));
+    }
+    if (options.scope) params.set("scope", options.scope);
+    if (options.type) params.set("type", options.type);
+    const res = await fetch(`${apiBase}/v1/search?${params.toString()}`, {
       credentials: "include"
     });
     if (!res.ok) return [];
@@ -658,6 +1080,34 @@ async function executeSearch(query, apiBase) {
   } catch (e) {
     return [];
   }
+}
+
+async function quickSearch(query, apiBase = DEFAULT_API_BASE) {
+  if (!query || typeof query !== "string") return [];
+  const cleanQ = query.trim();
+  if ([...cleanQ].length < 2) return [];
+
+  const cacheKey = `${apiBase}|${cleanQ.toLocaleLowerCase()}`;
+  const cached = quickSearchCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.hits;
+  if (cached) quickSearchCache.delete(cacheKey);
+  if (quickSearchInFlight.has(cacheKey)) return quickSearchInFlight.get(cacheKey);
+
+  // Keep the request on the bounded local typeahead path. It uses Meilisearch
+  // for matching and only hydrates director metadata for the returned movies;
+  // it never invokes TMDB fallback or auto-import.
+  const request = executeSearch(cleanQ, apiBase, { limit: 5, scope: "quick", type: "movie" })
+    .then((hits) => {
+      const result = hits.slice(0, 5);
+      quickSearchCache.set(cacheKey, { hits: result, expiresAt: Date.now() + QUICK_SEARCH_TTL_MS });
+      return result;
+    })
+    .finally(() => {
+      quickSearchInFlight.delete(cacheKey);
+    });
+
+  quickSearchInFlight.set(cacheKey, request);
+  return request;
 }
 
 /**
@@ -671,6 +1121,11 @@ async function searchAndResolve({ query, year, videoDuration }, apiBase = DEFAUL
   const cacheKey = `${cleanQ}_${year || ""}_${videoDuration || ""}`;
   if (searchCache.has(cacheKey)) {
     return searchCache.get(cacheKey);
+  }
+  const negativeUntil = negativeSearchCache.get(cacheKey);
+  if (negativeUntil) {
+    if (negativeUntil > Date.now()) return null;
+    negativeSearchCache.delete(cacheKey);
   }
 
   try {
@@ -729,7 +1184,10 @@ async function searchAndResolve({ query, year, videoDuration }, apiBase = DEFAUL
       }
     }
 
-    if (movieHits.length === 0) return null;
+    if (movieHits.length === 0) {
+      negativeSearchCache.set(cacheKey, Date.now() + NEGATIVE_SEARCH_TTL_MS);
+      return null;
+    }
 
     // Score and rank candidates by title match, popularity (votes), and year
     const scoredCandidates = [];
@@ -823,6 +1281,7 @@ async function searchAndResolve({ query, year, videoDuration }, apiBase = DEFAUL
     };
 
     searchCache.set(cacheKey, resolved);
+    negativeSearchCache.delete(cacheKey);
     return resolved;
   } catch (err) {
     console.log("[CinePersona SW] Search resolve error:", err);
@@ -956,6 +1415,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      if (message.action === "QUICK_SEARCH") {
+        const query = message.payload?.query || "";
+        const hits = await quickSearch(query, apiBase);
+        sendResponse({ success: true, hits });
+        return;
+      }
+
       if (message.action === "GET_MOVIE_RATINGS") {
         const movieId = message.payload?.movieId;
         const ratings = movieId ? await getMovieDetailRatings(movieId, apiBase) : [];
@@ -994,7 +1460,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           return;
         }
         const localDb = await getLocalDoubanDb(uid);
-        const csvData = generateCsvFromItems(localDb.items || []);
+        const csvData = generateCsvFromItems(localDb.items || [], localDb.top10 || []);
         await chrome.storage.local.set({ latestDoubanCsv: csvData });
         sendResponse({ success: true, csvData, count: localDb.items?.length || 0 });
         return;

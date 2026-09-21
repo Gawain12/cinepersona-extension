@@ -1,11 +1,11 @@
 /**
  * CinePersona Scrobbler Engine
- * Monitors HTML5 Video progress and triggers auto-recording when threshold (80%) is reached.
+ * Monitors HTML5 Video progress and triggers auto-recording at the configured threshold.
  */
 
 class CineScrobbler {
   constructor() {
-    this.threshold = 0.8; // 80% mark
+    this.threshold = 0.8; // Default: 80% mark; content/main.js applies the user's setting.
     this.hasScrobbled = false;
     this.activeVideo = null;
     this.matchedMovie = null;
@@ -49,7 +49,7 @@ class CineScrobbler {
 
     const progress = currentTime / duration;
 
-    // Check threshold (80%)
+    // Check the configured threshold.
     if (progress >= this.threshold) {
       this.hasScrobbled = true;
       if (this.onScrobble) {

@@ -30,7 +30,44 @@
   let boundVideoSrc = "";
   let pollTimer = null;
   let scrobbler = new window.CineScrobbler();
-  let ignoredReason = null; // "TV_SERIES" | "SHORT_CLIP" | null
+  let ignoredReason = null; // "TV_SERIES" | "SHORT_CLIP" | "MANUAL_SKIP" | null
+
+  let cachedSettings = { scrobbleEnabled: true, disabledPlatforms: [] };
+  let scrobbleSilent = false;
+
+  function applyTimingPreference(value) {
+    const normalized = String(value || "0.80");
+    scrobbleSilent = normalized === "manual";
+    const threshold = Number.parseFloat(normalized);
+    scrobbler.threshold = Number.isFinite(threshold) && threshold > 0 && threshold <= 1
+      ? threshold
+      : 0.8;
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await chrome.storage.local.get(["scrobbleEnabled", "disabledPlatforms"]);
+      if (typeof res.scrobbleEnabled === "boolean") cachedSettings.scrobbleEnabled = res.scrobbleEnabled;
+      if (Array.isArray(res.disabledPlatforms)) cachedSettings.disabledPlatforms = res.disabledPlatforms;
+      const syncSettings = await chrome.storage.sync.get("timingPreference");
+      applyTimingPreference(syncSettings.timingPreference);
+    } catch (e) {}
+  }
+  await loadSettings();
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local") {
+      if (changes.scrobbleEnabled) cachedSettings.scrobbleEnabled = changes.scrobbleEnabled.newValue !== false;
+      if (changes.disabledPlatforms) cachedSettings.disabledPlatforms = changes.disabledPlatforms.newValue || [];
+      if (!cachedSettings.scrobbleEnabled || cachedSettings.disabledPlatforms.includes(parser.name)) {
+        if (scrobbler) scrobbler.detach();
+        if (window.CineUI?.hide) window.CineUI.hide();
+      }
+    }
+    if (area === "sync" && changes.timingPreference) {
+      applyTimingPreference(changes.timingPreference.newValue);
+    }
+  });
 
   // If this frame has a video but no title (e.g. video inside an iframe), query parent/background for tab movie
   if (hasVideo && !hasTitle) {
@@ -49,6 +86,34 @@
   // 1. Respond to extension popup queries
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "GET_CURRENT_PLAYING") {
+      if (!cachedSettings.scrobbleEnabled) {
+        sendResponse({
+          success: false,
+          reason: "SCROBBLE_PAUSED",
+          platformName: parser.name
+        });
+        return true;
+      }
+
+      if (cachedSettings.disabledPlatforms.includes(parser.name)) {
+        sendResponse({
+          success: false,
+          reason: "PLATFORM_DISABLED",
+          platformName: parser.name
+        });
+        return true;
+      }
+
+      if (ignoredReason === "MANUAL_SKIP") {
+        sendResponse({
+          success: false,
+          reason: "MANUAL_SKIP",
+          platformName: parser.name,
+          data: matchedMovie ? { movie: matchedMovie } : null
+        });
+        return true;
+      }
+
       const video = parser.getVideo() || document.querySelector("video");
 
       // Check if current playback was classified as TV series / short clip
@@ -80,7 +145,7 @@
         checkAndBind();
         // If this is the main frame, reply waiting status
         if (window === window.top || video) {
-          sendResponse({ success: false, reason: "WAITING_MATCH" });
+          sendResponse({ success: false, reason: "WAITING_MATCH", hasVideo: Boolean(video) });
           return true;
         }
         return false;
@@ -99,6 +164,26 @@
           platformName: parser.name
         }
       });
+      return true;
+    }
+
+    if (message.action === "SKIP_CURRENT_PLAYING") {
+      ignoredReason = "MANUAL_SKIP";
+      if (scrobbler) scrobbler.detach();
+      if (window.CineUI?.hide) window.CineUI.hide();
+      console.log("[CinePersona] 本次播放已跳过打卡:", matchedMovie?.title);
+      sendResponse({ success: true, movie: matchedMovie });
+      return true;
+    }
+
+    if (message.action === "UNSKIP_CURRENT_PLAYING") {
+      ignoredReason = null;
+      if (boundVideo && matchedMovie) {
+        scrobbler.attach(boundVideo, matchedMovie, onScrobbleTriggered);
+      } else {
+        checkAndBind();
+      }
+      sendResponse({ success: true });
       return true;
     }
 
@@ -147,6 +232,8 @@
       }
     });
 
+    if (scrobbleSilent) return;
+
     // 2. Show in-page toast notification
     window.CineUI.show({
       movie,
@@ -180,6 +267,15 @@
       return;
     }
 
+    if (!cachedSettings.scrobbleEnabled || cachedSettings.disabledPlatforms.includes(parser.name)) {
+      if (scrobbler.activeVideo) scrobbler.detach();
+      return;
+    }
+
+    if (ignoredReason === "MANUAL_SKIP") {
+      return;
+    }
+
     // 1. Check if platform parser indicates this is a drama/variety/episode page
     if (typeof parser.isMoviePlayback === "function" && !parser.isMoviePlayback()) {
       if (ignoredReason !== "TV_SERIES") {
@@ -194,6 +290,13 @@
     const rawTitle = parser.getTitle();
     const video = parser.getVideo() || document.querySelector("video");
     const currentSrc = video ? (video.currentSrc || video.src || "active-video") : "";
+
+    // A page title alone is not enough evidence of film playback. In particular,
+    // cloud-drive home/file pages expose titles without an active player, which
+    // previously caused unnecessary searches on the main site every few seconds.
+    if (!video && !matchedMovie) {
+      return;
+    }
 
     // Read current video duration in minutes (if loaded)
     let durationMin = 0;

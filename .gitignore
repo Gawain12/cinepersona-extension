@@ -1,5 +1,10 @@
 .DS_Store
-Thumbs.db
 *.crx
 *.zip
+*.pem
 _metadata/
+node_modules/
+.env*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

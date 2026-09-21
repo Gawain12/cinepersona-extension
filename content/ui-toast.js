@@ -289,7 +289,7 @@ const CineUI = {
     const badgeHtml = `<span class="cp-badge" style="${badgeStyle}">${badgeText}</span>`;
     const metaSub = isAutoScrobbled
       ? (isRewatch ? cpT(`此前已看 · 本次记录为重温`, `Previously watched · recording a rewatch`) : cpT(`🎉 观影进度达标 · 已自动记入片库`, `🎉 Playback threshold reached · saved automatically`))
-      : cpT(`🎬 播放已识别 · 达 80% 自动打卡`, `🎬 Playback recognized · auto-saves at 80%`);
+      : cpT(`🎬 播放已识别 · 达设定比例自动打卡`, `🎬 Playback recognized · auto-saves at your selected threshold`);
 
     // Ratings badges
     const ratings = Array.isArray(movie.ratings) ? movie.ratings : [];

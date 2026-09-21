@@ -1,6 +1,24 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const i18n = globalThis.CinePersonaI18n || {};
   const t = (zh, en) => typeof i18n.t === "function" ? i18n.t(zh, en) : zh;
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>\"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  })[char]);
+  const safeHttpUrl = (value) => {
+    try {
+      const raw = String(value || "");
+      const url = new URL(raw, window.location.href);
+      if (/^https?:$/i.test(url.protocol)) return url.href;
+      if (url.protocol === "data:" && /^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(raw)) return raw;
+      return "";
+    } catch (e) {
+      return "";
+    }
+  };
   if (typeof i18n.apply === "function") i18n.apply(document);
 
   // Navigation elements
@@ -15,9 +33,47 @@ document.addEventListener("DOMContentLoaded", async () => {
   const scrobbleTiming = document.getElementById("scrobbleTiming");
   const togglePlatformsBtn = document.getElementById("togglePlatformsBtn");
   const platformsDetail = document.getElementById("platformsDetail");
+  const scrobbleStateBadge = document.getElementById("scrobbleStateBadge");
+  const masterScrobbleToggle = document.getElementById("masterScrobbleToggle");
 
   let currentAuthState = null;
   let currentRenderedMovieId = null;
+  let quickSearchTimer = null;
+  let quickSearchRequestId = 0;
+  let quickSearchHits = [];
+  let quickSearchResolvedQuery = "";
+  let quickSearchComposing = false;
+  const CINEPERSONA_WEB_ORIGIN = "https://cinepersona.com";
+
+  // Master Scrobble Toggle Logic
+  let { scrobbleEnabled = true } = await chrome.storage.local.get("scrobbleEnabled");
+
+  function updateScrobbleStateUI(enabled) {
+    if (masterScrobbleToggle) masterScrobbleToggle.checked = enabled;
+    if (scrobbleStateBadge) {
+      scrobbleStateBadge.className = "status-badge " + (enabled ? "active" : "paused");
+      scrobbleStateBadge.textContent = enabled ? t("● 监测中", "● Active") : t("⏸ 已暂停", "⏸ Paused");
+    }
+  }
+  updateScrobbleStateUI(scrobbleEnabled);
+
+  if (masterScrobbleToggle) {
+    masterScrobbleToggle.addEventListener("change", async (e) => {
+      scrobbleEnabled = e.target.checked;
+      await chrome.storage.local.set({ scrobbleEnabled });
+      updateScrobbleStateUI(scrobbleEnabled);
+      queryActiveTabPlaying();
+    });
+  }
+
+  if (scrobbleStateBadge) {
+    scrobbleStateBadge.addEventListener("click", async () => {
+      scrobbleEnabled = !scrobbleEnabled;
+      await chrome.storage.local.set({ scrobbleEnabled });
+      updateScrobbleStateUI(scrobbleEnabled);
+      queryActiveTabPlaying();
+    });
+  }
 
   // 1. Tab Switching
   tabBtns.forEach((btn) => {
@@ -41,7 +97,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // 3. Toggle Platforms
+  // 3. Platform Interactive Toggles
+  let { disabledPlatforms = [] } = await chrome.storage.local.get("disabledPlatforms");
+  if (!Array.isArray(disabledPlatforms)) disabledPlatforms = [];
+
+  function updatePlatformTagsUI() {
+    if (!platformsDetail) return;
+    platformsDetail.querySelectorAll(".platform-item").forEach((el) => {
+      const plat = el.getAttribute("data-platform");
+      if (!plat) return;
+      const isDisabled = disabledPlatforms.includes(plat);
+      el.classList.toggle("disabled", isDisabled);
+      el.title = isDisabled
+        ? t(`点击恢复【${plat}】的观影打卡`, `Click to enable ${plat}`)
+        : t(`点击排除【${plat}】的观影打卡`, `Click to exclude ${plat}`);
+    });
+  }
+  updatePlatformTagsUI();
+
+  if (platformsDetail) {
+    platformsDetail.addEventListener("click", async (e) => {
+      const tag = e.target.closest(".platform-item");
+      if (!tag) return;
+      const plat = tag.getAttribute("data-platform");
+      if (!plat) return;
+
+      if (disabledPlatforms.includes(plat)) {
+        disabledPlatforms = disabledPlatforms.filter((p) => p !== plat);
+      } else {
+        disabledPlatforms.push(plat);
+      }
+      await chrome.storage.local.set({ disabledPlatforms });
+      updatePlatformTagsUI();
+      queryActiveTabPlaying();
+    });
+  }
+
   if (togglePlatformsBtn && platformsDetail) {
     let isOpen = false;
     togglePlatformsBtn.addEventListener("click", () => {
@@ -82,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const next = img.nextElementSibling;
       const applyFallback = () => {
         img.style.display = "none";
-        if (next && (next.classList.contains("user-avatar-placeholder") || next.classList.contains("douban-avatar") || next.classList.contains("poster-fallback"))) {
+        if (next && (next.classList.contains("user-avatar-placeholder") || next.classList.contains("douban-avatar") || next.classList.contains("poster-fallback") || next.classList.contains("quick-search-thumb-fallback"))) {
           next.style.display = "flex";
         }
       };
@@ -94,7 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (img.complete && img.naturalWidth > 0) {
         img.style.display = "";
-        if (next && (next.classList.contains("user-avatar-placeholder") || next.classList.contains("douban-avatar") || next.classList.contains("poster-fallback"))) {
+        if (next && (next.classList.contains("user-avatar-placeholder") || next.classList.contains("douban-avatar") || next.classList.contains("poster-fallback") || next.classList.contains("quick-search-thumb-fallback"))) {
           next.style.display = "none";
         }
       }
@@ -103,7 +194,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       img.addEventListener("load", () => {
         if (img.naturalWidth > 0) {
           img.style.display = "";
-          if (next && (next.classList.contains("user-avatar-placeholder") || next.classList.contains("douban-avatar") || next.classList.contains("poster-fallback"))) {
+          if (next && (next.classList.contains("user-avatar-placeholder") || next.classList.contains("douban-avatar") || next.classList.contains("poster-fallback") || next.classList.contains("quick-search-thumb-fallback"))) {
             next.style.display = "none";
           }
         } else {
@@ -128,9 +219,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         avatar = avatar.replace(/^http:/, "https:");
       }
       const stats = res.stats;
-      const avatarHtml = avatar
-        ? `<img class="user-avatar-img" referrerpolicy="no-referrer" src="${avatar}" alt="${name}" /><div class="user-avatar-placeholder" style="display:none;">${name.charAt(0).toUpperCase()}</div>`
-        : `<div class="user-avatar-placeholder">${name.charAt(0).toUpperCase()}</div>`;
+      const safeName = escapeHtml(name);
+      const safeAvatar = escapeHtml(safeHttpUrl(avatar));
+      const initial = escapeHtml(name.charAt(0).toUpperCase());
+      const avatarHtml = safeAvatar
+        ? `<img class="user-avatar-img" referrerpolicy="no-referrer" src="${safeAvatar}" alt="${safeName}" /><div class="user-avatar-placeholder" style="display:none;">${initial}</div>`
+        : `<div class="user-avatar-placeholder">${initial}</div>`;
 
       userInfo.innerHTML = `
         <div class="user-profile-row">
@@ -138,10 +232,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div style="flex: 1; min-width: 0;">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
               <a href="https://cinepersona.com/library" target="_blank" class="user-name-link" title="${t("点击前往我的影格片库", "Go to my CinePersona library")}">
-                <span>${name}</span>
+                <span>${safeName}</span>
                 <span style="font-size: 11px; opacity: 0.7;">↗</span>
               </a>
-              ${stats ? `<a href="https://cinepersona.com/library" target="_blank" class="user-stat-badge" title="${t("查看已看与想看片库", "View watched and watchlist")}">🎬 ${stats.watchedCount || 0} · 📌 ${stats.watchlistCount || 0}</a>` : ""}
+              ${stats ? `<a href="https://cinepersona.com/library" target="_blank" rel="noopener noreferrer" class="user-stat-badge" title="${t("查看已看与想看片库", "View watched and watchlist")}">🎬 ${escapeHtml(stats.watchedCount || 0)} · 📌 ${escapeHtml(stats.watchlistCount || 0)}</a>` : ""}
             </div>
             <div style="font-size: 11px; margin-top: 4px;">
               <a href="https://cinepersona.com/library" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: 500;">
@@ -166,13 +260,138 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentActiveTabId = null;
 
   function renderLoadingPlaying(text = t("正在识别当前播放影视...", "Identifying the current film...")) {
+    // A WAITING_MATCH response means an actual video is present. Keep this state
+    // as a stable loading card instead of exposing a search field that could be
+    // replaced halfway through typing.
+    const loadingCard = playingContainer.querySelector("#quickSearchLoading");
+    if (loadingCard) {
+      const statusEl = loadingCard.querySelector("#quickSearchStatus");
+      if (statusEl) statusEl.textContent = text;
+      return;
+    }
+
+    invalidateQuickSearch();
     playingContainer.innerHTML = `
-      <div class="card empty-playing">
+      <div class="card empty-playing quick-search-loading" id="quickSearchLoading" aria-live="polite">
         <div class="empty-icon loading-pulse">🎬</div>
-        <div style="font-weight: 600; color: #f1f5f9; margin-top: 6px;">${text}</div>
-        <div style="font-size: 11px; color: #8e9eb5; margin-top: 4px;">${t("已接入播放器，正在比对影视元数据与外部评分...", "Player connected. Comparing film metadata and external ratings...")}</div>
+        <div id="quickSearchStatus" style="font-weight: 600; color: #f1f5f9;">${text}</div>
+        <div style="font-size: 10px; color: #8e9eb5; margin-top: 3px;">${t("正在等待当前视频完成识别…", "Waiting for the current video to be identified…")}</div>
       </div>
     `;
+  }
+
+  function invalidateQuickSearch() {
+    if (quickSearchTimer) {
+      clearTimeout(quickSearchTimer);
+      quickSearchTimer = null;
+    }
+    quickSearchRequestId += 1;
+    quickSearchHits = [];
+    quickSearchResolvedQuery = "";
+  }
+
+  function getQuickSearchPosterUrl(path) {
+    if (!path) return "";
+    const raw = String(path).trim();
+    const url = raw.startsWith("http://") || raw.startsWith("https://")
+      ? raw
+      : `https://image.tmdb.org/t/p/w185${raw.startsWith("/") ? "" : "/"}${raw}`;
+    return safeHttpUrl(url);
+  }
+
+  function getQuickSearchTargetUrl(hit) {
+    const raw = String(hit?.url || "").trim();
+    let target = raw;
+    if (raw.startsWith("/")) target = `${CINEPERSONA_WEB_ORIGIN}${raw}`;
+    if (!/^https?:\/\//i.test(target) && hit?.id) {
+      target = `${CINEPERSONA_WEB_ORIGIN}/movie/${encodeURIComponent(hit.id)}`;
+    }
+    return safeHttpUrl(target);
+  }
+
+  function openQuickSearchHit(hit) {
+    const target = getQuickSearchTargetUrl(hit);
+    if (target) window.open(target, "_blank");
+  }
+
+  function renderQuickSearchResults(state = "idle", hits = []) {
+    const resultsEl = playingContainer.querySelector("#quickSearchResults");
+    if (!resultsEl) return;
+
+    if (state === "loading") {
+      resultsEl.innerHTML = `<div class="quick-search-hint">${t("检索中…", "Searching…")}</div>`;
+      return;
+    }
+    if (state === "error") {
+      resultsEl.innerHTML = `<div class="quick-search-hint">${t("检索暂时失败，可打开完整检索。", "Search temporarily failed. Open full search instead.")}</div>`;
+      return;
+    }
+    if (!hits.length) {
+      resultsEl.innerHTML = state === "empty"
+        ? `<div class="quick-search-hint">${t("未找到电影条目，可打开完整检索。", "No film matches. Open full search for more sources.")}</div>`
+        : "";
+      return;
+    }
+
+    resultsEl.innerHTML = hits.map((hit, index) => {
+      const title = escapeHtml(hit.title || hit.titleEn || t("未命名影片", "Untitled film"));
+      const metaParts = [
+        hit.subtitle || hit.titleOriginal || hit.titleEn || t("电影", "Film"),
+        hit.director ? `${t("导演", "Dir.")} ${hit.director}` : ""
+      ].filter(Boolean);
+      const subtitle = escapeHtml(metaParts.join(" · "));
+      const posterUrl = escapeHtml(getQuickSearchPosterUrl(hit.posterPath || hit.posterURL));
+      const poster = posterUrl
+        ? `<img class="quick-search-thumb" src="${posterUrl}" alt="${title}" /><span class="quick-search-thumb-fallback">🎬</span>`
+        : `<span class="quick-search-thumb quick-search-thumb-placeholder">🎬</span>`;
+      return `
+        <button type="button" class="quick-search-item" data-quick-index="${index}">
+          ${poster}
+          <span class="quick-search-info">
+            <span class="quick-search-title">${title}</span>
+            <span class="quick-search-subtitle">${subtitle}</span>
+          </span>
+          <span class="quick-search-arrow">›</span>
+        </button>
+      `;
+    }).join("");
+
+    bindImageFallbacks(resultsEl);
+    resultsEl.querySelectorAll("[data-quick-index]").forEach((item) => {
+      item.addEventListener("click", () => {
+        const index = Number(item.getAttribute("data-quick-index"));
+        const hit = quickSearchHits[index];
+        if (hit) openQuickSearchHit(hit);
+      });
+    });
+  }
+
+  function scheduleQuickSearch(query) {
+    if (quickSearchTimer) clearTimeout(quickSearchTimer);
+    const requestId = ++quickSearchRequestId;
+    quickSearchHits = [];
+    quickSearchResolvedQuery = "";
+    const cleanQuery = String(query || "").trim();
+
+    if ([...cleanQuery].length < 2) {
+      renderQuickSearchResults("idle");
+      return;
+    }
+
+    renderQuickSearchResults("loading");
+    quickSearchTimer = setTimeout(() => {
+      chrome.runtime.sendMessage({ action: "QUICK_SEARCH", payload: { query: cleanQuery } }, (res) => {
+        if (requestId !== quickSearchRequestId) return;
+        quickSearchTimer = null;
+        if (chrome.runtime.lastError || !res?.success) {
+          renderQuickSearchResults("error");
+          return;
+        }
+        quickSearchHits = Array.isArray(res.hits) ? res.hits : [];
+        quickSearchResolvedQuery = cleanQuery;
+        renderQuickSearchResults(quickSearchHits.length ? "ready" : "empty", quickSearchHits);
+      });
+    }, 400);
   }
 
   // 5. Query Active Tab for Current Playing Movie
@@ -188,6 +407,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       currentActiveTabId = activeTab.id;
       chrome.tabs.sendMessage(activeTab.id, { action: "GET_CURRENT_PLAYING" }, { frameId: 0 }, (response) => {
         const lastErr = chrome.runtime.lastError;
+
+        if (response && response.reason === "SCROBBLE_PAUSED") {
+          renderScrobblePausedCard();
+          return;
+        }
+
+        if (response && response.reason === "PLATFORM_DISABLED") {
+          renderPlatformDisabledCard(response.platformName);
+          return;
+        }
+
+        if (response && response.reason === "MANUAL_SKIP") {
+          renderManualSkippedCard(response.platformName, response.data?.movie);
+          return;
+        }
 
         if (response && response.reason === "WAITING_MATCH") {
           renderLoadingPlaying(t("正在识别当前播放影视...", "Identifying the current film..."));
@@ -251,7 +485,77 @@ document.addEventListener("DOMContentLoaded", async () => {
     return `${String(remM).padStart(2, "0")}:${String(remS).padStart(2, "0")}`;
   }
 
+  function renderScrobblePausedCard() {
+    invalidateQuickSearch();
+    currentRenderedMovieId = null;
+    playingContainer.innerHTML = `
+      <div class="card empty-playing" style="border-left: 3px solid #f59e0b;">
+        <div class="empty-icon" style="font-size: 28px;">⏸</div>
+        <div style="font-weight: 600; color: #f1f5f9; margin-top: 6px;">${t("自动观影打卡已暂停", "Auto-scrobbling is paused")}</div>
+        <div style="font-size: 12px; color: #94a3b8; margin-top: 6px; line-height: 1.5;">${t("当前扩展处于全局暂停打卡状态，页面不会弹出打卡气泡或自动记录足迹。", "The extension is paused globally. In-page toasts and scrobbling are temporarily disabled.")}</div>
+        <button class="btn btn-primary" id="resumeScrobbleBtn" style="margin-top: 10px; width: auto; padding: 6px 14px; font-size: 11px;">${t("恢复自动打卡 ▶", "Resume auto-scrobble ▶")}</button>
+      </div>
+    `;
+    const resumeScrobbleBtn = playingContainer.querySelector("#resumeScrobbleBtn");
+    if (resumeScrobbleBtn) {
+      resumeScrobbleBtn.addEventListener("click", async () => {
+        scrobbleEnabled = true;
+        await chrome.storage.local.set({ scrobbleEnabled: true });
+        updateScrobbleStateUI(true);
+        queryActiveTabPlaying();
+      });
+    }
+  }
+
+  function renderPlatformDisabledCard(platformName) {
+    invalidateQuickSearch();
+    currentRenderedMovieId = null;
+    const name = platformName || t("当前平台", "Current platform");
+    const safeName = escapeHtml(name);
+    playingContainer.innerHTML = `
+      <div class="card empty-playing" style="border-left: 3px solid #94a3b8;">
+        <div class="empty-icon" style="font-size: 28px;">🚫</div>
+        <div style="font-weight: 600; color: #f1f5f9; margin-top: 6px;">${t("该平台打卡监测已排除", "Platform excluded")}</div>
+        <div style="font-size: 12px; color: #94a3b8; margin-top: 6px; line-height: 1.5;">${t(`您已在偏好设置中将【${safeName}】设为排除，在此播放不会触发打卡。`, `You have excluded [${safeName}] in preferences.`)}</div>
+        <button class="btn btn-secondary" id="enableThisPlatformBtn" style="margin-top: 10px; width: auto; padding: 6px 14px; font-size: 11px;">${t(`为【${safeName}】恢复打卡`, `Enable for ${safeName}`)}</button>
+      </div>
+    `;
+    const enableThisPlatformBtn = playingContainer.querySelector("#enableThisPlatformBtn");
+    if (enableThisPlatformBtn) {
+      enableThisPlatformBtn.addEventListener("click", async () => {
+        disabledPlatforms = disabledPlatforms.filter((p) => p !== name);
+        await chrome.storage.local.set({ disabledPlatforms });
+        updatePlatformTagsUI();
+        queryActiveTabPlaying();
+      });
+    }
+  }
+
+  function renderManualSkippedCard(platformName, movie) {
+    invalidateQuickSearch();
+    currentRenderedMovieId = null;
+    const movieTitle = movie ? `《${escapeHtml(movie.title)}》` : t("当前影片", "this film");
+    playingContainer.innerHTML = `
+      <div class="card empty-playing" style="border-left: 3px solid #94a3b8;">
+        <div class="empty-icon" style="font-size: 28px;">🙈</div>
+        <div style="font-weight: 600; color: #f1f5f9; margin-top: 6px;">${t("已跳过本次观影打卡", "Skipped for this playback")}</div>
+        <div style="font-size: 12px; color: #94a3b8; margin-top: 6px; line-height: 1.5;">${t(`本次播放 ${movieTitle} 不会记录到您的影格片库。切换到其他视频后将自动恢复监测。`, `This viewing of ${movieTitle} will not be saved. Monitoring resumes on next video.`)}</div>
+        <button class="btn btn-secondary" id="undoSkipBtn" style="margin-top: 10px; width: auto; padding: 6px 14px; font-size: 11px;">${t("撤销跳过 ↺", "Undo skip ↺")}</button>
+      </div>
+    `;
+    const undoSkipBtn = playingContainer.querySelector("#undoSkipBtn");
+    if (undoSkipBtn) {
+      undoSkipBtn.addEventListener("click", () => {
+        if (!currentActiveTabId) return;
+        chrome.tabs.sendMessage(currentActiveTabId, { action: "UNSKIP_CURRENT_PLAYING" }, { frameId: 0 }, () => {
+          queryActiveTabPlaying();
+        });
+      });
+    }
+  }
+
   function renderNonMovieSkipped(htmlMsg) {
+    invalidateQuickSearch();
     currentRenderedMovieId = null;
     playingContainer.innerHTML = `
       <div class="card empty-playing" style="border-left: 3px solid #38bdf8;">
@@ -264,12 +568,54 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderEmptyPlaying(msg) {
     currentRenderedMovieId = null;
+
+    // Do not replace a user's search field during background polling. Apart from
+    // losing focus, replacing the node also discarded text already entered.
+    const existingSearchInput = playingContainer.querySelector("#quickSearchInput");
+    if (existingSearchInput) {
+      const statusEl = playingContainer.querySelector("#quickSearchStatus");
+      if (statusEl) statusEl.innerHTML = msg;
+      return;
+    }
+
+    invalidateQuickSearch();
     playingContainer.innerHTML = `
-      <div class="card empty-playing">
-        <div class="empty-icon">🎬</div>
-        <div>${msg}</div>
+      <div class="card empty-playing quick-search-empty">
+        <div id="quickSearchStatus" class="quick-search-status">${msg}</div>
+        <div style="margin-top: 6px; width: 100%; display: flex; gap: 6px;">
+          <input type="text" id="quickSearchInput" class="correct-input" placeholder="${t("在影格中搜索电影快速打卡...", "Search film on CinePersona...")}" style="flex: 1; font-size: 11px;" />
+          <button id="quickSearchBtn" class="btn btn-secondary" style="width: auto; padding: 6px 12px; font-size: 11px;">${t("搜索", "Go")}</button>
+        </div>
+        <div id="quickSearchResults" class="quick-search-results" aria-live="polite"></div>
       </div>
     `;
+    const quickSearchInput = playingContainer.querySelector("#quickSearchInput");
+    const quickSearchBtn = playingContainer.querySelector("#quickSearchBtn");
+    const doQuickSearch = () => {
+      const q = quickSearchInput?.value?.trim();
+      if (!q) return;
+      if (quickSearchResolvedQuery === q && quickSearchHits.length === 1) {
+        openQuickSearchHit(quickSearchHits[0]);
+        return;
+      }
+      window.open(`https://cinepersona.com/search?q=${encodeURIComponent(q)}`, "_blank");
+    };
+    if (quickSearchBtn) quickSearchBtn.addEventListener("click", doQuickSearch);
+    if (quickSearchInput) {
+      quickSearchInput.addEventListener("compositionstart", () => {
+        quickSearchComposing = true;
+      });
+      quickSearchInput.addEventListener("compositionend", () => {
+        quickSearchComposing = false;
+        scheduleQuickSearch(quickSearchInput.value);
+      });
+      quickSearchInput.addEventListener("input", () => {
+        if (!quickSearchComposing) scheduleQuickSearch(quickSearchInput.value);
+      });
+      quickSearchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doQuickSearch();
+      });
+    }
   }
 
   function renderPlaying(data) {
@@ -307,6 +653,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    invalidateQuickSearch();
     currentRenderedMovieId = movie.id;
     let currentRating = activity?.rating ? (activity.rating / 2) : 0;
     let reviewText = activity?.reviewText || "";
@@ -325,8 +672,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       </svg>
     `;
 
-    const posterHtml = movie.posterURL
-      ? `<img class="poster-img" src="${movie.posterURL}" alt="${movie.title}" /><div class="poster-fallback" style="display:none;">${posterFallbackSvg}</div>`
+    const safeMovieTitle = escapeHtml(movie.title || t("未命名影片", "Untitled film"));
+    const safePosterUrl = escapeHtml(safeHttpUrl(movie.posterURL));
+    const safePlatformName = escapeHtml(data.platformName || t("当前页面", "Current page"));
+    const safeYear = escapeHtml(movie.year || "");
+    const safeReviewText = escapeHtml(reviewText);
+    const posterHtml = safePosterUrl
+      ? `<img class="poster-img" src="${safePosterUrl}" alt="${safeMovieTitle}" /><div class="poster-fallback" style="display:none;">${posterFallbackSvg}</div>`
       : `<div class="poster-fallback">${posterFallbackSvg}</div>`;
 
     let ratingsHtml = "";
@@ -335,12 +687,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="movie-ratings-row">
           ${movie.ratings.map((r) => {
             let cls = "cp";
-            let label = r.source;
+            let label = escapeHtml(r.source);
             if (r.source === "豆瓣") { cls = "douban"; label = "DB"; }
             else if (r.source === "IMDb") { cls = "imdb"; label = "IMDb"; }
             else if (r.source.toLowerCase().includes("letterboxd")) { cls = "lboxd"; label = "LB"; }
             else if (r.source === "影格") { cls = "cp"; label = "CP"; }
-            return `<span class="rating-badge ${cls}">${label} ${r.score}</span>`;
+            return `<span class="rating-badge ${cls}">${label} ${escapeHtml(r.score)}</span>`;
           }).join("")}
         </div>
       `;
@@ -349,14 +701,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     playingContainer.innerHTML = `
       <div class="card">
         <div class="card-title">
-          <span>${data.platformName || t("当前页面", "Current page")}</span>
+          <span>${safePlatformName}</span>
           <span class="movie-badge ${badgeClass}">${badgeLabel}</span>
         </div>
         <div class="movie-box">
           <div class="poster-wrap clickable" id="moviePosterWrap" title="${t("点击在影格查看电影详情 ↗", "Open film details in CinePersona ↗")}">${posterHtml}</div>
           <div class="movie-info">
-            <div class="movie-title clickable" id="movieTitleWrap" title="${t("点击在影格查看电影详情 ↗", "Open film details in CinePersona ↗")}">${movie.title}</div>
-            <div class="movie-meta">${movie.year ? movie.year : t("电影", "Film")} · ${isRewatch ? t("曾看过的佳作", "Previously watched") : t("初次观影", "First watch")}</div>
+            <div class="movie-title clickable" id="movieTitleWrap" title="${t("点击在影格查看电影详情 ↗", "Open film details in CinePersona ↗")}">${safeMovieTitle}</div>
+            <div class="movie-meta">${safeYear || t("电影", "Film")} · ${isRewatch ? t("曾看过的佳作", "Previously watched") : t("初次观影", "First watch")}</div>
             ${ratingsHtml}
             <span class="correct-link" id="toggleCorrectBtn">${t("识别有误？点击纠偏 ✎", "Wrong match? Correct it ✎")}</span>
           </div>
@@ -365,7 +717,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <!-- Correction Box -->
         <div class="correct-box" id="correctBox">
           <div class="correct-input-row">
-            <input type="text" class="correct-input" id="correctSearchInput" placeholder="${t("输入正确片名搜索...", "Search the correct film title...")}" value="${movie.title || ''}" />
+            <input type="text" class="correct-input" id="correctSearchInput" placeholder="${t("输入正确片名搜索...", "Search the correct film title...")}" value="${safeMovieTitle}" />
             <button class="btn-sm" id="doCorrectSearchBtn">${t("搜索", "Search")}</button>
           </div>
           <div class="correct-results" id="correctResults"></div>
@@ -395,12 +747,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
 
         <!-- Review Textarea -->
-        <textarea class="review-textarea" id="popupReviewInput" placeholder="${t("写句简短观后感同步到影格主页...", "Write a short review to sync to your CinePersona profile...")}">${reviewText}</textarea>
+        <textarea class="review-textarea" id="popupReviewInput" placeholder="${t("写句简短观后感同步到影格主页...", "Write a short review to sync to your CinePersona profile...")}">${safeReviewText}</textarea>
 
         <!-- Action Button -->
         <button class="btn btn-primary" id="popupSaveBtn">
           ${hasScrobbled ? t("更新评分与短评", "Update rating and review") : (isRewatch ? t("立即记录重温", "Record this rewatch") : t("标记为已看", "Mark as watched"))}
         </button>
+
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button class="btn btn-secondary" id="popupSkipFilmBtn" style="flex: 1; padding: 7px 10px; font-size: 11px;" title="${t("本次播放不记录入库，直到切换下一个视频", "Do not scrobble this viewing session")}">
+            ${t("🙈 本次不打卡", "🙈 Skip this film")}
+          </button>
+          <button class="btn btn-secondary" id="popupOpenWebBtn" style="flex: 1; padding: 7px 10px; font-size: 11px;" title="${t("在影格打开完整详情与影评", "View full details & reviews on CinePersona")}">
+            ${t("在影格打开 ↗", "Open in CinePersona ↗")}
+          </button>
+        </div>
       </div>
     `;
     bindImageFallbacks(playingContainer);
@@ -415,6 +776,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
     if (moviePosterWrap) moviePosterWrap.addEventListener("click", handleOpenMovie);
     if (movieTitleWrap) movieTitleWrap.addEventListener("click", handleOpenMovie);
+
+    const popupSkipFilmBtn = playingContainer.querySelector("#popupSkipFilmBtn");
+    if (popupSkipFilmBtn) {
+      popupSkipFilmBtn.addEventListener("click", () => {
+        if (!currentActiveTabId) return;
+        chrome.tabs.sendMessage(currentActiveTabId, { action: "SKIP_CURRENT_PLAYING" }, { frameId: 0 }, () => {
+          renderManualSkippedCard(data.platformName || t("当前页面", "Current page"), movie);
+        });
+      });
+    }
+
+    const popupOpenWebBtn = playingContainer.querySelector("#popupOpenWebBtn");
+    if (popupOpenWebBtn) {
+      popupOpenWebBtn.addEventListener("click", handleOpenMovie);
+    }
 
     // Toggle correction box interaction
     const toggleCorrectBtn = playingContainer.querySelector("#toggleCorrectBtn");
@@ -444,10 +820,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           }
           correctResults.innerHTML = res.hits.slice(0, 5).map((h, i) => `
             <div class="correct-item" data-idx="${i}">
-              <img class="correct-item-thumb" src="${h.posterURL || ''}" />
+              <img class="correct-item-thumb" src="${escapeHtml(safeHttpUrl(h.posterURL))}" />
               <div class="correct-item-info">
-                <div class="correct-item-title">${h.title}</div>
-                <div class="correct-item-sub">${h.year ? h.year + ' · ' : ''}${h.director || t("电影", "Film")}</div>
+                <div class="correct-item-title">${escapeHtml(h.title)}</div>
+                <div class="correct-item-sub">${h.year ? escapeHtml(h.year) + ' · ' : ''}${escapeHtml(h.director || t("电影", "Film"))}</div>
               </div>
             </div>
           `).join("");
@@ -572,6 +948,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 6. Douban Sync Tab Logic
+  const doubanPermissionGate = document.getElementById("doubanPermissionGate");
+  const doubanFeatureContent = document.getElementById("doubanFeatureContent");
+  const enableDoubanBtn = document.getElementById("enableDoubanBtn");
+  const doubanPermissionStatus = document.getElementById("doubanPermissionStatus");
+  const doubanPermissionStatusText = document.getElementById("doubanPermissionStatusText");
+  const doubanToggleCheckbox = document.getElementById("doubanToggleCheckbox");
+  const doubanRevokeSection = document.getElementById("doubanRevokeSection");
+  const revokeDoubanPermissionsBtn = document.getElementById("revokeDoubanPermissionsBtn");
   const doubanAccountInfo = document.getElementById("doubanAccountInfo");
   const doubanSyncHistory = document.getElementById("doubanSyncHistory");
   const startDoubanSyncBtn = document.getElementById("startDoubanSyncBtn");
@@ -587,6 +971,147 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const doubanResetAnchorBtn = document.getElementById("doubanResetAnchorBtn");
   const doubanSyncHistoryText = document.getElementById("doubanSyncHistoryText");
+
+  const doubanPermissionOrigins = [
+    "https://*.douban.com/*",
+    "https://*.doubanio.com/*"
+  ];
+  const doubanSessionOriginPatterns = [
+    "https://*.douban.com/*",
+    "https://douban.com/*"
+  ];
+
+  async function hasDoubanPermissions() {
+    try {
+      if (!chrome.permissions) return false;
+      if (chrome.permissions.getAll) {
+        const granted = await chrome.permissions.getAll();
+        const hasCookiePermission = (granted.permissions || []).includes("cookies");
+        const hasDoubanOrigin = (granted.origins || []).some((origin) =>
+          origin === "<all_urls>" || doubanSessionOriginPatterns.includes(origin)
+        );
+        return hasCookiePermission && hasDoubanOrigin;
+      }
+      return await chrome.permissions.contains({
+        permissions: ["cookies"],
+        origins: ["https://*.douban.com/*"]
+      });
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function renderDoubanPermissionState() {
+    const hasPerm = await hasDoubanPermissions();
+    const { doubanConnectorEnabled = true } = await chrome.storage.local.get(["doubanConnectorEnabled"]);
+    const isActive = Boolean(hasPerm && doubanConnectorEnabled);
+
+    if (doubanPermissionGate) doubanPermissionGate.style.display = "block";
+    if (doubanFeatureContent) doubanFeatureContent.style.display = isActive ? "block" : "none";
+
+    if (doubanToggleCheckbox) {
+      doubanToggleCheckbox.checked = isActive;
+      doubanToggleCheckbox.disabled = false;
+    }
+
+    if (doubanPermissionStatus) {
+      doubanPermissionStatus.classList.toggle("enabled", isActive);
+      doubanPermissionStatus.classList.toggle("disabled", !isActive);
+    }
+
+    if (doubanRevokeSection) {
+      doubanRevokeSection.style.display = hasPerm ? "block" : "none";
+    }
+
+    if (doubanPermissionStatusText) {
+      if (!hasPerm) {
+        doubanPermissionStatusText.textContent = t("豆瓣访问未授权", "Douban access not authorized");
+      } else if (!doubanConnectorEnabled) {
+        doubanPermissionStatusText.textContent = t("⏸ 已暂时停用（权限仍保留）", "⏸ Paused (permissions kept)");
+      } else {
+        doubanPermissionStatusText.textContent = t("● 豆瓣连接器运行中", "● Douban connector active");
+      }
+    }
+
+    if (enableDoubanBtn) {
+      if (!hasPerm) {
+        enableDoubanBtn.style.display = "inline-block";
+        enableDoubanBtn.disabled = false;
+        enableDoubanBtn.textContent = t("启用授权", "Grant access");
+      } else {
+        enableDoubanBtn.style.display = "none";
+      }
+    }
+
+    if (isActive) {
+      loadDoubanSession();
+      chrome.runtime.sendMessage({ action: "DOUBAN_GET_SYNC_STATUS" }, (res) => {
+        if (res && res.status && res.status.status !== "idle") updateSyncUI(res.status);
+      });
+    } else {
+      if (doubanAccountInfo) {
+        doubanAccountInfo.innerHTML = `<div style="font-size: 12px; color: #8e9eb5;">${t("连接器已停用。", "Connector is paused.")}</div>`;
+      }
+    }
+  }
+
+  if (doubanToggleCheckbox) {
+    doubanToggleCheckbox.addEventListener("change", async (e) => {
+      const willEnable = e.target.checked;
+      const hasPerm = await hasDoubanPermissions();
+
+      if (willEnable) {
+        if (!hasPerm) {
+          doubanToggleCheckbox.checked = false;
+          if (enableDoubanBtn) enableDoubanBtn.click();
+          return;
+        }
+        await chrome.storage.local.set({ doubanConnectorEnabled: true });
+        await renderDoubanPermissionState();
+      } else {
+        await chrome.storage.local.set({ doubanConnectorEnabled: false });
+        await renderDoubanPermissionState();
+      }
+    });
+  }
+
+  if (revokeDoubanPermissionsBtn) {
+    revokeDoubanPermissionsBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await chrome.permissions.remove({
+          permissions: ["cookies"],
+          origins: doubanPermissionOrigins
+        });
+      } catch (err) {}
+      await chrome.storage.local.set({ doubanConnectorEnabled: false });
+      await renderDoubanPermissionState();
+    });
+  }
+
+  if (enableDoubanBtn) {
+    enableDoubanBtn.addEventListener("click", async () => {
+      enableDoubanBtn.disabled = true;
+      enableDoubanBtn.textContent = t("正在请求权限…", "Requesting access…");
+      let granted = false;
+      try {
+        granted = await chrome.permissions.request({
+          permissions: ["cookies"],
+          origins: doubanPermissionOrigins
+        });
+      } catch (e) {
+        granted = false;
+      }
+
+      if (granted) {
+        await chrome.storage.local.set({ doubanConnectorEnabled: true });
+        await renderDoubanPermissionState();
+      } else {
+        enableDoubanBtn.disabled = false;
+        enableDoubanBtn.textContent = t("启用授权", "Grant access");
+      }
+    });
+  }
 
   async function renderDoubanSyncHistory() {
     if (!doubanSyncHistoryText) return;
@@ -622,14 +1147,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  function updateDoubanStatsSummary(stats) {
+    const summary = doubanAccountInfo?.querySelector("#doubanStatsSummary");
+    if (!summary) return;
+    const values = [
+      [t("看过", "Watched"), stats?.watchedCount || 0],
+      [t("想看", "Watchlist"), stats?.wishCount || 0],
+      [t("影评", "Reviews"), stats?.reviewCount || 0],
+      [t("Top10", "Top10"), stats?.top10Count || 0]
+    ];
+    summary.innerHTML = values.map(([label, value]) =>
+      `<span class="douban-stat"><strong>${escapeHtml(value)}</strong>${escapeHtml(label)}</span>`
+    ).join("");
+  }
+
   function loadDoubanSession() {
     chrome.runtime.sendMessage({ action: "DOUBAN_CHECK_SESSION" }, (res) => {
       if (!res || !res.loggedIn) {
+        currentDoubanUser = null;
+        const runtimeError = chrome.runtime.lastError;
+        const reason = res?.reason || (runtimeError ? "CHECK_FAILED" : "NO_DOUBAN_SESSION");
+        const sessionMessage = reason === "SESSION_LOOKUP_FAILED"
+          ? t("检测到豆瓣会话，但暂时无法确认当前用户。先打开豆瓣页面并刷新，再点重新检查。", "A Douban session was found, but the current user could not be confirmed. Open and refresh Douban, then check again.")
+          : reason === "CHECK_FAILED"
+            ? t("豆瓣会话检查失败，请稍后重新检查。", "Douban session check failed. Please try again.")
+            : t("当前浏览器配置中没有可用的豆瓣登录状态。请在同一浏览器配置打开豆瓣并刷新。", "No usable Douban sign-in state was found in this browser profile. Open and refresh Douban in the same profile.");
         if (doubanAccountInfo) {
           doubanAccountInfo.innerHTML = `
-            <div style="font-size: 12px; color: #8e9eb5; margin-bottom: 6px;">${t("未检测到浏览器中的豆瓣登录 Cookie。", "No Douban sign-in cookie was found in this browser.")}</div>
+            <div style="font-size: 12px; color: #8e9eb5; margin-bottom: 6px;">${sessionMessage}</div>
             <a href="https://m.douban.com/mine/" target="_blank" class="toggle-platforms" style="color: #60a5fa;">${t("一键前往豆瓣网页端登录 ↗", "Open Douban to sign in ↗")}</a>
+            <a href="#" id="retryDoubanSessionBtn" class="toggle-platforms" style="display: inline-block; margin-top: 6px; color: #60a5fa;">${t("重新检查", "Check again")}</a>
           `;
+          doubanAccountInfo.querySelector("#retryDoubanSessionBtn")?.addEventListener("click", (event) => {
+            event.preventDefault();
+            loadDoubanSession();
+          });
         }
         if (startDoubanSyncBtn) {
           startDoubanSyncBtn.disabled = true;
@@ -640,33 +1192,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       currentDoubanUser = res;
       const userHomeUrl = `https://www.douban.com/people/${encodeURIComponent(res.uid)}/`;
-      let doubanAvatar = res.avatar || "";
+      const safeDoubanName = escapeHtml(res.name || "");
+      const safeDoubanUid = escapeHtml(res.uid || "");
+      const safeUserHomeUrl = escapeHtml(userHomeUrl);
+      let doubanAvatar = safeHttpUrl(res.avatar);
       if (doubanAvatar.startsWith("http:")) {
         doubanAvatar = doubanAvatar.replace(/^http:/, "https:");
       }
+      const safeDoubanAvatar = escapeHtml(doubanAvatar);
       const avatarHtml = doubanAvatar
-        ? `<img class="douban-avatar" referrerpolicy="no-referrer" src="${doubanAvatar}" alt="${res.name}" /><div class="douban-avatar" style="display:none;align-items:center;justify-content:center;color:#60a5fa;font-size:14px;background:rgba(59,130,246,0.2);">DB</div>`
+        ? `<img class="douban-avatar" referrerpolicy="no-referrer" src="${safeDoubanAvatar}" alt="${safeDoubanName}" /><div class="douban-avatar" style="display:none;align-items:center;justify-content:center;color:#60a5fa;font-size:14px;background:rgba(59,130,246,0.2);">DB</div>`
         : `<div class="douban-avatar" style="display:flex;align-items:center;justify-content:center;color:#60a5fa;font-size:14px;background:rgba(59,130,246,0.2);">DB</div>`;
-
-      const statsBadge = `<span class="douban-stat-badge" title="${t("豆瓣标记统计", "Douban mark statistics")}">🎬 ${res.watchedCount || 0} ${t("看过", "watched")} · 📌 ${res.wishCount || 0} ${t("想看", "to watch")}</span>`;
 
       if (doubanAccountInfo) {
         doubanAccountInfo.innerHTML = `
           <div class="douban-user-box">
-            <a href="${userHomeUrl}" target="_blank" title="${t("前往豆瓣主页", "Open Douban profile")}">${avatarHtml}</a>
+            <a href="${safeUserHomeUrl}" target="_blank" rel="noopener noreferrer" title="${t("前往豆瓣主页", "Open Douban profile")}">${avatarHtml}</a>
             <div style="flex: 1; overflow: hidden;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                <a href="${userHomeUrl}" target="_blank" class="douban-name douban-link" title="${t("前往豆瓣主页", "Open Douban profile")}">${res.name}</a>
-                ${statsBadge}
+                <a href="${safeUserHomeUrl}" target="_blank" rel="noopener noreferrer" class="douban-name douban-link" title="${t("前往豆瓣主页", "Open Douban profile")}">${safeDoubanName}</a>
               </div>
               <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
-                <span class="douban-id">${t("豆瓣 ID", "Douban ID")}: <a href="${userHomeUrl}" target="_blank" class="douban-link" title="${t("前往豆瓣主页", "Open Douban profile")}">${res.uid} ↗</a></span>
+                <span class="douban-id">${t("豆瓣 ID", "Douban ID")}: <a href="${safeUserHomeUrl}" target="_blank" rel="noopener noreferrer" class="douban-link" title="${t("前往豆瓣主页", "Open Douban profile")}">${safeDoubanUid} ↗</a></span>
                 <span style="font-size: 10px; color: #34d399; font-weight: 600;">${t("会话有效 ✓", "Session active ✓")}</span>
               </div>
             </div>
           </div>
+          <div id="doubanStatsSummary" class="douban-stats-grid" aria-label="${t("豆瓣数据概览", "Douban data summary")}"></div>
         `;
         bindImageFallbacks(doubanAccountInfo);
+        updateDoubanStatsSummary(res);
       }
       if (startDoubanSyncBtn) {
         startDoubanSyncBtn.disabled = false;
@@ -675,8 +1230,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderDoubanSyncHistory();
     });
   }
-  loadDoubanSession();
-
   function updateSyncUI(status) {
     if (!status) return;
     if (status.status === "syncing") {
@@ -696,7 +1249,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         startDoubanSyncBtn.disabled = false;
         startDoubanSyncBtn.textContent = t("🔄 再次同步最新数据", "🔄 Sync latest data again");
       }
-      if (doubanSyncLog) doubanSyncLog.innerHTML = `<span style="color: #34d399;">${status.message}</span>`;
+      if (doubanSyncLog) doubanSyncLog.textContent = status.message || t("同步完成。", "Sync complete.");
       if (status.unmatchedCount > 0 && openUnmatchedBtn) {
         openUnmatchedBtn.textContent = t(`👉 前往影格处理 ${status.unmatchedCount} 部待确认条目 ↗`, `👉 Review ${status.unmatchedCount} unmatched films in CinePersona ↗`);
         openUnmatchedBtn.style.display = "block";
@@ -711,6 +1264,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         if (openImportCenterBtn) openImportCenterBtn.style.display = "block";
       }
+      if (currentDoubanUser) {
+        currentDoubanUser.watchedCount = status.watchedCount || 0;
+        currentDoubanUser.wishCount = status.wishCount || 0;
+        currentDoubanUser.reviewCount = status.reviewCount || 0;
+        currentDoubanUser.top10Count = status.top10Count || 0;
+        updateDoubanStatsSummary(currentDoubanUser);
+      }
       renderDoubanSyncHistory();
     } else if (status.status === "error") {
       if (syncPollTimer) clearInterval(syncPollTimer);
@@ -719,7 +1279,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         startDoubanSyncBtn.disabled = false;
         startDoubanSyncBtn.textContent = t("🔄 重试同步", "🔄 Retry sync");
       }
-      if (doubanSyncLog) doubanSyncLog.innerHTML = `<span style="color: #ef4444;">❌ ${t("同步中断", "Sync interrupted")}: ${status.message}</span>`;
+      if (doubanSyncLog) doubanSyncLog.textContent = `❌ ${t("同步中断", "Sync interrupted")}: ${status.message || t("未知错误", "Unknown error")}`;
       if (openUnmatchedBtn) openUnmatchedBtn.style.display = "none";
     }
   }
@@ -757,7 +1317,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       const allowCloudSync = Boolean(cloudSyncConsent?.checked);
-      if (allowCloudSync && !confirm(t("本次将把新增电影的片名、评分、短评和标记时间提交到你的影格片库。确认继续吗？", "This will send new film titles, ratings, reviews, and timestamps to your CinePersona library. Continue?"))) {
+      if (allowCloudSync && !confirm(t("本次会把新增标记写入影格云端，继续吗？", "Write the new marks to CinePersona cloud for this sync?"))) {
         return;
       }
       if (cloudSyncConsent) cloudSyncConsent.checked = false;
@@ -819,6 +1379,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // Initial call & live dynamic polling
+  renderDoubanPermissionState();
   queryActiveTabPlaying();
   const pollInterval = setInterval(queryActiveTabPlaying, 1500);
   window.addEventListener("unload", () => {

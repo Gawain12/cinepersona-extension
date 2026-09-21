@@ -3,7 +3,7 @@
   "default_locale": "en",
   "name": "__MSG_extensionName__",
   "short_name": "CinePersona",
-  "version": "1.0.2",
+  "version": "1.1.4",
   "description": "__MSG_extensionDescription__",
   "icons": {
     "16": "icons/icon-16.png",
@@ -13,27 +13,22 @@
   },
   "permissions": [
     "storage",
-    "cookies",
     "activeTab",
     "tabs",
-    "declarativeNetRequest"
+    "declarativeNetRequestWithHostAccess"
   ],
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "douban_rules",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
-  },
+  "optional_permissions": [
+    "cookies"
+  ],
   "host_permissions": [
     "https://cinepersona.com/*",
     "https://test.gawyn.de/*",
     "http://localhost:3000/*",
-    "http://localhost:8081/*",
-    "*://*.douban.com/*",
-    "*://*.doubanio.com/*"
+    "http://localhost:8081/*"
+  ],
+  "optional_host_permissions": [
+    "https://*.douban.com/*",
+    "https://*.doubanio.com/*"
   ],
   "background": {
     "service_worker": "background.js"

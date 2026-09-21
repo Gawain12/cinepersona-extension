@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>网页与网盘观影全自动打卡 · 豆瓣历史智能同步与离线备份 · 电影性格 DNA</b>
+  <b>网页与网盘观影全自动打卡 · 可选豆瓣历史同步与离线备份 · 电影性格 DNA</b>
 </p>
 
 <p align="center">
@@ -20,10 +20,10 @@
 
 ## English summary
 
-CinePersona is a Chromium extension for movie scrobbling and Douban backup. It identifies films while you watch on supported streaming and cloud-drive sites, tracks playback progress, and lets you save ratings and short reviews.
+CinePersona is a Chromium extension for movie scrobbling and personal movie discovery. It identifies films while you watch on supported streaming and cloud-drive sites, tracks playback progress, and lets you save ratings and short reviews.
 
 - Cloud writes are opt-in: only records you explicitly select and confirm are sent to your CinePersona library.
-- Douban data is first processed and stored locally; you can export a complete CSV backup at any time.
+- The optional Douban connector is off by default. If you enable it, Douban data is first processed and stored locally; you can export a complete CSV backup at any time.
 - TV episodes, short videos, and commentary/UGC content are filtered out of the movie history.
 - The extension uses the browser language: Chinese browsers show Simplified Chinese, other non-empty languages show English, and an empty language falls back to Chinese.
 
@@ -38,8 +38,10 @@ The detailed guide below is currently in Chinese. The Edge and Chrome store subm
   <img src="screenshots/scrobble-preview.png" width="850" alt="夸克网盘观影识别与打卡预览" />
 </p>
 
-### 2. 豆瓣历史智能同步与本地全量 CSV 备份 (Douban Sync)
+### 2. 可选：豆瓣历史智能同步与本地全量 CSV 备份 (Douban Sync)
 > 免输入密码与 Cookie，原生读取浏览器会话。本地自动维护全量离线数据库，增量对齐极速抓取新标记；随时一键导出包含全部评分、短评与日期的标准 CSV 备份，再也不怕账号异常或数据丢失。
+
+> 豆瓣连接器默认关闭。只有用户在扩展内主动启用并同意浏览器权限后，扩展才会访问当前浏览器中的豆瓣会话；会话只用于向豆瓣请求用户本人的标记，不会把 Cookie 值发送给 CinePersona 或无关第三方，也不要求输入密码。
 
 <p align="center">
   <img src="screenshots/douban-sync-preview.png" width="400" alt="豆瓣数据增量同步与本地离线备份" />
@@ -62,7 +64,7 @@ The detailed guide below is currently in Chinese. The Edge and Chrome store subm
 
 ### 🔄 2. 豆瓣影视标记一键同步与永久离线备份 (Douban Backup)
 很多影迷朋友都面临“豆瓣标记过多、担心账号异常、数据导出困难”的痛点。影格助手内置了强大的豆瓣生态工具箱：
-* **零门槛免配直连**：无需手动提取 Cookie，无需提供豆瓣账号密码，只需在浏览器中正常登录豆瓣网页，插件即可通过安全的本地会话通道一键检测登录状态。
+* **用户主动授权**：无需手动提取 Cookie，无需提供豆瓣账号密码；启用连接器后，插件才会通过浏览器本地会话检测登录状态。
 * **本地全量数据库架构**：插件在浏览器本地存储（`chrome.storage.local`）中持久化保存你的完整豆瓣影视库（包含看过、想看、用户评分、短评内容、标记日期）。
 * **智能增量倒退对齐算法**：
   * 首次同步：全量倒退拉取建立完整的本地影视库；
@@ -138,7 +140,7 @@ git clone https://github.com/Gawain12/cinepersona-extension.git
 * **安全沙箱环境**：遵守 Chrome Manifest V3 规范，严格遵循 CSP 安全策略，**绝不使用 `eval()`、绝不动态加载外部可执行代码**。
 * **会话与 Cookie**：
   * 影格会话：依靠你在浏览器登录 CinePersona 的安全 Session Cookie 识别个人片库，扩展本身不记录你的账号密码；
-  * 豆瓣读取：用于在本地比对并保存你本人的豆瓣电影标记列表、生成 CSV 备份。你登录 CinePersona 并执行同步后，新增电影记录、评分、短评和标记时间会通过 HTTPS 提交到 CinePersona 的导入接口，以写入你自己的影格片库；扩展不会读取或上传豆瓣 Cookie 值、密码或其他登录凭证。
+  * 豆瓣读取：连接器默认关闭。启用后，扩展会在本地读取豆瓣会话来比对并保存你本人的豆瓣电影标记列表、生成 CSV 备份。你登录 CinePersona 并在同步时单独确认云端写入后，新增电影记录、评分、短评和标记时间才会通过 HTTPS 提交到 CinePersona 的导入接口；Cookie 值、密码或其他登录凭证不会上传给 CinePersona 或其他第三方。
 
 ---
 
