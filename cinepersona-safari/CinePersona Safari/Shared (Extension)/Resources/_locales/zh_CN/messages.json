@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "CinePersona 影格 - 观影自动打卡与电影DNA"
+  },
+  "extensionDescription": {
+    "message": "在网页观看爱优腾、B站及网盘时，自动识别片名、记录观影足迹并生成电影性格DNA。"
+  },
+  "actionTitle": {
+    "message": "CinePersona 影格助手"
+  }
+}

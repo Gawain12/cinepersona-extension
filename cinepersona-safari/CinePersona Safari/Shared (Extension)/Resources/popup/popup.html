@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="referrer" content="no-referrer" />
+  <title data-i18n-zh="CinePersona 影格" data-i18n-en="CinePersona">CinePersona 影格</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      width: 350px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #0b0f19;
+      color: #f1f5f9;
+      padding: 14px;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(77, 138, 255, 0.15);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-svg {
+      width: 22px;
+      height: 22px;
+    }
+    .brand span {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: #f1f5f9;
+    }
+    .status-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+    .status-badge.online {
+      background: rgba(59, 130, 246, 0.18);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .status-badge.offline {
+      background: rgba(245, 158, 11, 0.16);
+      color: #f5b73d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .status-badge.paused {
+      background: rgba(245, 158, 11, 0.18);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .status-badge.active {
+      background: rgba(34, 197, 94, 0.18);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+
+    /* iOS-Style Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #2b3952;
+      transition: .2s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 12px;
+      width: 12px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #ffffff;
+      transition: .2s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    input:checked + .slider {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+    input:checked + .slider:before {
+      transform: translateX(16px);
+    }
+
+    .platform-item {
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .platform-item:hover {
+      border-color: rgba(96, 165, 250, 0.5);
+      color: #93c5fd;
+    }
+    .platform-item.disabled {
+      opacity: 0.4;
+      text-decoration: line-through;
+      background: rgba(0, 0, 0, 0.25);
+      border-color: rgba(255, 255, 255, 0.05);
+      color: #64748b;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin: 12px 0;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 6px 0;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: #8e9eb5;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: #3b82f6;
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+    }
+
+    /* Tab Panes */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Cards */
+    .card {
+      background: #131d31;
+      border: 1px solid rgba(77, 138, 255, 0.16);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #8e9eb5;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .permission-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: #dbe7f7;
+    }
+    .permission-status.enabled {
+      color: #86efac;
+    }
+    .permission-status.disabled {
+      color: #cbd5e1;
+    }
+    .permission-details {
+      margin-top: 8px;
+      color: #8e9eb5;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .permission-details summary {
+      cursor: pointer;
+      color: #8fb8f8;
+    }
+    .permission-details p {
+      margin: 6px 0 0;
+    }
+    .douban-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .douban-stat {
+      min-width: 0;
+      padding: 5px 4px;
+      border-top: 1px solid rgba(96, 165, 250, 0.22);
+      color: #8e9eb5;
+      font-size: 10px;
+      text-align: center;
+      line-height: 1.35;
+    }
+    .douban-stat strong {
+      display: block;
+      color: #dbe7f7;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Playing Tab Styles */
+    .movie-box {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .poster-wrap {
+      width: 52px;
+      height: 74px;
+      border-radius: 6px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .poster-wrap.clickable, .movie-title.clickable {
+      cursor: pointer;
+    }
+    .movie-title.clickable:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+    .poster-wrap.clickable:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+    }
+    .poster-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .poster-fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.3);
+    }
+    .movie-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .movie-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: color 0.15s;
+    }
+    .movie-meta {
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-top: 3px;
+    }
+    .movie-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .movie-badge.scrobbled {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .movie-badge.watching {
+      background: rgba(245, 158, 11, 0.18);
+      color: #f5b73d;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    /* Super-Compact Ratings Row (DB / IMDb / LB / CP) */
+    .movie-ratings-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 4px;
+      margin-top: 5px;
+      overflow-x: auto;
+    }
+    .rating-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+      line-height: 1.3;
+    }
+    .rating-badge.douban {
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+    }
+    .rating-badge.imdb {
+      color: #fbbf24;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+    }
+    .rating-badge.lboxd {
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+    .rating-badge.cp {
+      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.14);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .user-profile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+    .user-name-text {
+      font-weight: 600;
+      color: #ffffff;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 130px;
+    }
+    .user-stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 11px;
+      color: #cbd5e1;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      margin-bottom: 10px;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-bottom: 4px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Rating Stars (Half-star & hover motion) */
+    .stars-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    .stars-track {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .star-item {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.18);
+      user-select: none;
+      line-height: 1;
+      width: 18px;
+      text-align: center;
+      transition: transform 0.1s;
+    }
+    .star-item.active {
+      color: #f5b73d;
+    }
+    .star-item.half {
+      background: linear-gradient(90deg, #f5b73d 50%, rgba(255, 255, 255, 0.18) 50%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    .star-text {
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-left: 6px;
+      font-weight: 500;
+    }
+
+    /* Review Textarea */
+    .review-textarea {
+      width: 100%;
+      height: 48px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(77, 138, 255, 0.18);
+      border-radius: 6px;
+      padding: 6px 8px;
+      color: #f1f5f9;
+      font-size: 11px;
+      resize: none;
+      outline: none;
+      margin-bottom: 8px;
+      font-family: inherit;
+    }
+    .review-textarea:focus {
+      border-color: #3b82f6;
+    }
+
+    /* Correction Link & Box */
+    .correct-link {
+      display: inline-block;
+      font-size: 10px;
+      color: #60a5fa;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    .correct-link:hover {
+      text-decoration: underline;
+    }
+    .correct-box {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+    .correct-box.show {
+      display: block;
+    }
+    .correct-input-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .correct-input {
+      flex: 1;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: 1px solid rgba(77, 138, 255, 0.2);
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      outline: none;
+    }
+    .correct-input:focus {
+      border-color: #3b82f6;
+    }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: none;
+      background: #3b82f6;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-sm:hover {
+      background: #2563eb;
+    }
+    .correct-results {
+      max-height: 140px;
+      overflow-y: auto;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .correct-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .correct-item:hover {
+      background: rgba(59, 130, 246, 0.25);
+    }
+    .correct-item-thumb {
+      width: 22px;
+      height: 30px;
+      border-radius: 3px;
+      object-fit: cover;
+      background: #333;
+      flex-shrink: 0;
+    }
+    .correct-item-info {
+      flex: 1;
+      overflow: hidden;
+    }
+    .correct-item-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .correct-item-sub {
+      font-size: 10px;
+      color: #8e9eb5;
+    }
+
+    .quick-search-results {
+      width: 100%;
+      max-height: 220px;
+      overflow-y: auto;
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-align: left;
+    }
+    .quick-search-empty {
+      padding: 8px 10px;
+    }
+    .quick-search-status {
+      color: #8e9eb5;
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: left;
+      margin-bottom: 6px;
+    }
+    .quick-search-hint {
+      padding: 4px 2px 0;
+      color: #64748b;
+      font-size: 10px;
+      text-align: center;
+    }
+    .quick-search-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 3px 5px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #f1f5f9;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .quick-search-item:hover,
+    .quick-search-item:focus-visible {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(96, 165, 250, 0.45);
+      outline: none;
+    }
+    .quick-search-thumb,
+    .quick-search-thumb-fallback {
+      width: 22px;
+      height: 32px;
+      border-radius: 3px;
+      object-fit: cover;
+      background: #1e293b;
+      flex-shrink: 0;
+    }
+    .quick-search-thumb-fallback,
+    .quick-search-thumb-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 13px;
+    }
+    .quick-search-thumb-fallback {
+      display: none;
+    }
+    .quick-search-info {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .quick-search-title,
+    .quick-search-subtitle {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .quick-search-title {
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+    .quick-search-subtitle {
+      color: #8e9eb5;
+      font-size: 9.5px;
+    }
+    .quick-search-arrow {
+      flex-shrink: 0;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    /* Empty state */
+    .empty-playing {
+      padding: 12px 10px;
+      text-align: center;
+      color: #8e9eb5;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .empty-icon {
+      font-size: 28px;
+      margin-bottom: 4px;
+      color: rgba(255, 255, 255, 0.25);
+    }
+    .quick-search-loading {
+      padding: 18px 10px;
+    }
+
+    /* Douban Tab Styles */
+    .douban-user-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .douban-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(77, 138, 255, 0.25);
+      background: #1e293b;
+    }
+    .douban-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .douban-stat-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10.5px;
+      color: #93c5fd;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 999px;
+      padding: 1px 7px;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .douban-id {
+      font-size: 10px;
+      color: #8e9eb5;
+      margin-top: 2px;
+    }
+    .douban-link {
+      color: #60a5fa;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .douban-link:hover {
+      text-decoration: underline;
+    }
+    .douban-sync-history {
+      font-size: 11px;
+      color: #8e9eb5;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sync-mode-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .sync-mode-btn {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+      font-size: 11px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sync-mode-btn.active {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: #3b82f6;
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    .sync-log-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      min-height: 48px;
+      max-height: 80px;
+      overflow-y: auto;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .cloud-sync-consent {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin: 10px 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(96, 165, 250, 0.25);
+      border-radius: 8px;
+      background: rgba(59, 130, 246, 0.08);
+      color: #cbd5e1;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .cloud-sync-consent input {
+      flex: 0 0 auto;
+      margin-top: 2px;
+      accent-color: #3b82f6;
+    }
+    .cloud-sync-consent strong {
+      color: #e2e8f0;
+    }
+
+    /* Settings Tab Styles */
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .setting-select {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(77, 138, 255, 0.2);
+      color: #60a5fa;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+    .setting-select option {
+      background: #0b0f19;
+      color: #fff;
+    }
+    .platforms-summary {
+      font-size: 11px;
+      color: #8e9eb5;
+      line-height: 1.6;
+    }
+    .platforms-detail {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      display: none;
+    }
+    .platforms-detail.show {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+    }
+    .platform-item {
+      font-size: 11px;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .platform-item::before {
+      content: "•";
+      color: #3b82f6;
+      font-weight: bold;
+    }
+    .toggle-platforms {
+      font-size: 11px;
+      color: #60a5fa;
+      cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    .toggle-platforms:hover {
+      text-decoration: underline;
+    }
+
+    /* Buttons */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #3b82f6;
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(59, 130, 246, 0.25);
+    }
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .btn-warning {
+      background: #f59e0b;
+      color: #0b0f19;
+      font-weight: 700;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.25);
+    }
+    .btn-warning:hover {
+      background: #d97706;
+    }
+    .footer {
+      font-size: 10px;
+      color: #64748b;
+      text-align: center;
+      margin-top: 10px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.96); opacity: 0.75; }
+      50% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(0.96); opacity: 0.75; }
+    }
+    .loading-pulse {
+      animation: pulse-ring 1.8s infinite ease-in-out;
+    }
+    .user-profile-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid rgba(77, 138, 255, 0.3);
+      background: #1e293b;
+    }
+    .user-avatar-placeholder {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: #60a5fa;
+      font-size: 16px;
+    }
+    .user-name-link {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .user-name-link:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+    .user-stat-badge {
+      display: inline-block;
+      font-size: 11px;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 2px 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .user-stat-badge:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <a href="https://cinepersona.com" target="_blank" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;" data-i18n-title-zh="打开影格 CinePersona 官网" data-i18n-title-en="Open CinePersona website">
+        <img src="../icons/cinepersona-icon.png" style="width: 22px; height: 22px; border-radius: 6px; object-fit: contain;" alt="CinePersona" />
+        <span>CinePersona</span>
+      </a>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <span id="scrobbleStateBadge" class="status-badge active" style="cursor: pointer; user-select: none;" data-i18n-title-zh="点击快速切换打卡状态" data-i18n-title-en="Click to toggle scrobbling">● 监测中</span>
+      <span id="authStatus" class="status-badge offline" data-i18n-zh="检测中..." data-i18n-en="Checking...">检测中...</span>
+    </div>
+  </div>
+
+  <!-- Tab Switcher (3 Tabs) -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tab-playing" data-i18n-zh="当前观影" data-i18n-en="Now playing">当前观影</button>
+    <button class="tab-btn" data-tab="tab-douban" data-i18n-zh="🧰 数据工具" data-i18n-en="🧰 Data tools">🧰 数据工具</button>
+    <button class="tab-btn" data-tab="tab-settings" data-i18n-zh="偏好设置" data-i18n-en="Preferences">偏好设置</button>
+  </div>
+
+  <!-- Tab 1: Now Playing -->
+  <div id="tab-playing" class="tab-content active">
+    <div id="playingContainer">
+      <div class="card empty-playing">
+        <div class="empty-icon">🎬</div>
+        <div data-i18n-zh="正在检查当前页面播放状态..." data-i18n-en="Checking playback on the current page...">正在检查当前页面播放状态...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Douban Sync -->
+  <div id="tab-douban" class="tab-content">
+    <div class="card" id="doubanPermissionGate">
+      <div class="card-title">
+        <span data-i18n-zh="豆瓣连接器" data-i18n-en="Douban connector">豆瓣连接器</span>
+        <label class="switch" data-i18n-title-zh="开启或暂时停用豆瓣连接器" data-i18n-title-en="Toggle Douban connector">
+          <input type="checkbox" id="doubanToggleCheckbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="doubanPermissionStatus" class="permission-status disabled">
+        <span id="doubanPermissionStatusText" data-i18n-zh="豆瓣访问未启用" data-i18n-en="Douban access is off">豆瓣访问未启用</span>
+        <button class="btn btn-secondary" id="enableDoubanBtn" style="padding: 5px 10px; width: auto; font-size: 11px;" data-i18n-zh="启用授权" data-i18n-en="Grant access">启用授权</button>
+      </div>
+      <details class="permission-details">
+        <summary data-i18n-zh="权限与隐私说明" data-i18n-en="Permission & privacy">权限与隐私说明</summary>
+        <p data-i18n-zh="仅在本地读取当前浏览器的豆瓣会话；不会上传 Cookie。" data-i18n-en="Reads the current Douban session locally; your Cookie is never uploaded.">仅在本地读取当前浏览器的豆瓣会话；不会上传 Cookie。</p>
+        <p data-i18n-zh="云端写入只在本次勾选并确认后发生，否则只保存到本地。" data-i18n-en="Cloud writing happens only when checked and confirmed for this sync; otherwise data stays local.">云端写入只在本次勾选并确认后发生，否则只保存到本地。</p>
+        <div id="doubanRevokeSection" style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); display: none;">
+          <a href="#" id="revokeDoubanPermissionsBtn" style="color: #f87171; text-decoration: underline; font-size: 11px;" data-i18n-zh="彻底撤销浏览器权限" data-i18n-en="Revoke browser permissions completely">彻底撤销浏览器权限</a>
+        </div>
+      </details>
+    </div>
+
+    <div id="doubanFeatureContent" style="display: none;">
+    <div class="card" id="doubanAccountCard">
+      <div class="card-title" data-i18n-zh="豆瓣会话状态" data-i18n-en="Douban session">豆瓣会话状态</div>
+      <div id="doubanAccountInfo">
+        <div style="font-size: 12px; color: #8e9eb5;" data-i18n-zh="正在检测豆瓣登录 Cookie..." data-i18n-en="Checking your Douban sign-in cookie...">正在检测豆瓣登录 Cookie...</div>
+      </div>
+      <div class="douban-sync-history" id="doubanSyncHistory">
+        <span id="doubanSyncHistoryText" data-i18n-zh="上次同步：暂无记录" data-i18n-en="Last sync: none yet">上次同步：暂无记录</span>
+        <span id="doubanResetAnchorBtn" class="toggle-platforms" style="font-size: 10px; color: #8e9eb5; cursor: pointer;" data-i18n-title-zh="清空本地库，从头重新抓取" data-i18n-title-en="Clear the local library and sync from the beginning" data-i18n-zh="清空本地库 ↺" data-i18n-en="Clear local library ↺">清空本地库 ↺</span>
+      </div>
+    </div>
+
+      <div class="card">
+        <div class="card-title" data-i18n-zh="豆瓣同步与备份" data-i18n-en="Douban sync & backup">豆瓣同步与备份</div>
+        <div class="sync-log-box" id="doubanSyncLog" data-i18n-zh="就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。" data-i18n-en="Ready: sync your latest marks below, or export a local CSV backup.">就绪：点击下方按钮同步最新标记，或直接导出本地 CSV 备份。</div>
+
+        <label class="cloud-sync-consent" for="cloudSyncConsent">
+          <input type="checkbox" id="cloudSyncConsent" />
+          <span data-i18n-html-zh="<strong>同时写入影格云端</strong> <small>（可选）</small>" data-i18n-html-en="<strong>Also write to CinePersona cloud</strong> <small>(optional)</small>"><strong>同时写入影格云端</strong> <small>（可选）</small></span>
+        </label>
+
+        <button class="btn btn-primary" id="startDoubanSyncBtn" data-i18n-zh="🔄 同步最新豆瓣数据" data-i18n-en="🔄 Sync latest Douban data">🔄 同步最新豆瓣数据</button>
+      <button class="btn btn-secondary" id="downloadDoubanCsvBtn" style="margin-top: 8px;" data-i18n-zh="📥 导出本地完整 CSV 备份" data-i18n-en="📥 Export full local CSV backup">📥 导出本地完整 CSV 备份</button>
+      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-secondary" id="openImportCenterBtn" style="display: none; margin-top: 8px; text-decoration: none;" data-i18n-zh="👉 前往影格【导入中心】上传入库 ↗" data-i18n-en="👉 Open CinePersona import center ↗">👉 前往影格【导入中心】上传入库 ↗</a>
+      <a href="https://cinepersona.com/import" target="_blank" class="btn btn-warning" id="openUnmatchedBtn" style="display: none; margin-top: 8px;" data-i18n-zh="👉 前往影格处理未匹配项 ↗" data-i18n-en="👉 Open CinePersona to review unmatched films ↗">👉 前往影格处理未匹配项 ↗</a>
+    </div>
+
+    </div>
+  </div>
+
+  <!-- Tab 3: Settings -->
+  <div id="tab-settings" class="tab-content">
+    <!-- Master Scrobble Toggle Card -->
+    <div class="card">
+      <div class="card-title">
+        <span data-i18n-zh="自动观影打卡" data-i18n-en="Auto-scrobble playback">自动观影打卡</span>
+        <label class="switch" data-i18n-title-zh="开启或暂停自动观影打卡" data-i18n-title-en="Toggle auto-scrobbling">
+          <input type="checkbox" id="masterScrobbleToggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div style="font-size: 11px; color: #8e9eb5; line-height: 1.5; margin-top: 4px;" data-i18n-zh="开启后，在支持的平台播放电影达阈值时，自动记录足迹并展示气泡提示。关闭时进入完全静默模式。" data-i18n-en="When enabled, playback progress triggers automatic recording and toast notifications. When disabled, playback is kept silent.">
+        开启后，在支持的平台播放电影达阈值时，自动记录足迹并展示气泡提示。关闭时进入完全静默模式。
+      </div>
+    </div>
+
+    <!-- Account Card -->
+    <div class="card" id="userBox">
+      <div class="card-title" data-i18n-zh="当前绑定账号" data-i18n-en="Connected account">当前绑定账号</div>
+      <div class="card-content" id="userInfo" style="font-size: 12px; line-height: 1.5;" data-i18n-zh="检查登录会话中..." data-i18n-en="Checking sign-in session...">检查登录会话中...</div>
+    </div>
+
+    <!-- Scrobble Timing Preference -->
+    <div class="card">
+      <div class="card-title" data-i18n-zh="打卡与弹窗机制" data-i18n-en="Scrobble & toast behavior">打卡与弹窗机制</div>
+      <div class="setting-row">
+        <span data-i18n-zh="打卡时机：" data-i18n-en="Scrobble at:">打卡时机：</span>
+        <select id="scrobbleTiming" class="setting-select">
+          <option value="0.80" data-i18n-zh="播放达 80% 时" data-i18n-en="At 80% playback">播放达 80% 时</option>
+          <option value="0.90" data-i18n-zh="播放达 90% 时" data-i18n-en="At 90% playback">播放达 90% 时</option>
+          <option value="1.00" data-i18n-zh="播放完全结束时" data-i18n-en="When playback ends">播放完全结束时</option>
+          <option value="manual" data-i18n-zh="达到 80% 后静默入库" data-i18n-en="Save silently after 80%">达到 80% 后静默入库</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Supported Platforms -->
+    <div class="card">
+      <div class="card-title" data-i18n-zh="支持平台与独立开关" data-i18n-en="Platforms & site toggles">支持平台与独立开关</div>
+      <div class="platforms-summary" data-i18n-html-zh="已覆盖 <b>14 大主流</b> 网盘与流媒体（点击标签可单独启用或排除）：" data-i18n-html-en="Supports <b>14 major</b> streaming & cloud sites (click tags to toggle):">
+        已覆盖 <b>14 大主流</b> 网盘与流媒体（点击标签可单独启用或排除）：
+      </div>
+      <span id="togglePlatformsBtn" class="toggle-platforms" data-i18n-zh="查看全部支持平台 ▾" data-i18n-en="Show all supported platforms ▾">查看全部支持平台 ▾</span>
+      <div class="platforms-detail" id="platformsDetail">
+        <span class="platform-item" data-platform="哔哩哔哩" data-i18n-zh="哔哩哔哩 (B站)" data-i18n-en="Bilibili">哔哩哔哩 (B站)</span>
+        <span class="platform-item" data-platform="腾讯视频" data-i18n-zh="腾讯视频" data-i18n-en="Tencent Video">腾讯视频</span>
+        <span class="platform-item" data-platform="爱奇艺" data-i18n-zh="爱奇艺" data-i18n-en="iQIYI">爱奇艺</span>
+        <span class="platform-item" data-platform="优酷" data-i18n-zh="优酷" data-i18n-en="Youku">优酷</span>
+        <span class="platform-item" data-platform="阿里云盘" data-i18n-zh="阿里云盘" data-i18n-en="Aliyun Drive">阿里云盘</span>
+        <span class="platform-item" data-platform="夸克网盘" data-i18n-zh="夸克网盘" data-i18n-en="Quark Drive">夸克网盘</span>
+        <span class="platform-item" data-platform="百度网盘" data-i18n-zh="百度网盘" data-i18n-en="Baidu Drive">百度网盘</span>
+        <span class="platform-item" data-platform="115网盘" data-i18n-zh="115网盘" data-i18n-en="115 Drive">115网盘</span>
+        <span class="platform-item" data-platform="Netflix" data-i18n-zh="Netflix (网飞)" data-i18n-en="Netflix">Netflix (网飞)</span>
+        <span class="platform-item" data-platform="YouTube">YouTube</span>
+        <span class="platform-item" data-platform="Prime Video">Prime Video</span>
+        <span class="platform-item" data-platform="Disney+">Disney+</span>
+        <span class="platform-item" data-platform="Max">Max (HBO Max)</span>
+        <span class="platform-item" data-platform="Apple TV+">Apple TV+</span>
+      </div>
+    </div>
+
+    <a href="https://cinepersona.com/dna" target="_blank" class="btn btn-primary" id="mainAction" data-i18n-zh="查看我的电影 DNA" data-i18n-en="View my movie DNA">查看我的电影 DNA</a>
+    <a href="https://cinepersona.com/settings" target="_blank" class="btn btn-secondary" data-i18n-zh="影格设置中心" data-i18n-en="CinePersona settings">影格设置中心</a>
+  </div>
+
+  <div class="footer" data-i18n-zh="智能片名解析 · 丝滑零打扰" data-i18n-en="Smart title matching · Quiet by design">智能片名解析 · 丝滑零打扰</div>
+
+  <script src="../i18n.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

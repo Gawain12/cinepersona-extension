@@ -1,0 +1,979 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0DFF380E3062C31100795188 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF380D3062C31100795188 /* AppDelegate.swift */; };
+		0DFF38103062C31100795188 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF380F3062C31100795188 /* SceneDelegate.swift */; };
+		0DFF38133062C31100795188 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38113062C31100795188 /* LaunchScreen.storyboard */; };
+		0DFF38163062C31100795188 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38143062C31100795188 /* Main.storyboard */; };
+		0DFF381F3062C31100795188 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF381E3062C31100795188 /* AppDelegate.swift */; };
+		0DFF38223062C31100795188 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38203062C31100795188 /* Main.storyboard */; };
+		0DFF38293062C31200795188 /* CinePersona Safari Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0DFF38283062C31200795188 /* CinePersona Safari Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0DFF38333062C31200795188 /* CinePersona Safari Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0DFF38323062C31200795188 /* CinePersona Safari Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0DFF38383062C31200795188 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF37FD3062C31000795188 /* Main.html */; };
+		0DFF38393062C31200795188 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF37FD3062C31000795188 /* Main.html */; };
+		0DFF383A3062C31200795188 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF37FF3062C31000795188 /* Icon.png */; };
+		0DFF383B3062C31200795188 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF37FF3062C31000795188 /* Icon.png */; };
+		0DFF383C3062C31200795188 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38003062C31000795188 /* Style.css */; };
+		0DFF383D3062C31200795188 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38003062C31000795188 /* Style.css */; };
+		0DFF383E3062C31200795188 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38013062C31000795188 /* Script.js */; };
+		0DFF383F3062C31200795188 /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38013062C31000795188 /* Script.js */; };
+		0DFF38403062C31200795188 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF38023062C31000795188 /* ViewController.swift */; };
+		0DFF38413062C31200795188 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF38023062C31000795188 /* ViewController.swift */; };
+		0DFF38423062C31200795188 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38033062C31100795188 /* Assets.xcassets */; };
+		0DFF38433062C31200795188 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38033062C31100795188 /* Assets.xcassets */; };
+		0DFF38443062C31200795188 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF38053062C31100795188 /* SafariWebExtensionHandler.swift */; };
+		0DFF38453062C31200795188 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DFF38053062C31100795188 /* SafariWebExtensionHandler.swift */; };
+		0DFF38623062C31200795188 /* popup in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38573062C31200795188 /* popup */; };
+		0DFF38633062C31200795188 /* screenshots in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38583062C31200795188 /* screenshots */; };
+		0DFF38643062C31200795188 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38593062C31200795188 /* LICENSE */; };
+		0DFF38653062C31200795188 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385A3062C31200795188 /* background.js */; };
+		0DFF38663062C31200795188 /* content in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385B3062C31200795188 /* content */; };
+		0DFF38673062C31200795188 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385C3062C31200795188 /* README.md */; };
+		0DFF38683062C31200795188 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385D3062C31200795188 /* icons */; };
+		0DFF38693062C31200795188 /* rules.json in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385E3062C31200795188 /* rules.json */; };
+		0DFF386A3062C31200795188 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385F3062C31200795188 /* manifest.json */; };
+		0DFF386B3062C31200795188 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38603062C31200795188 /* _locales */; };
+		0DFF386C3062C31200795188 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38613062C31200795188 /* i18n.js */; };
+		0DFF386D3062C31200795188 /* popup in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38573062C31200795188 /* popup */; };
+		0DFF386E3062C31200795188 /* screenshots in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38583062C31200795188 /* screenshots */; };
+		0DFF386F3062C31200795188 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38593062C31200795188 /* LICENSE */; };
+		0DFF38703062C31200795188 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385A3062C31200795188 /* background.js */; };
+		0DFF38713062C31200795188 /* content in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385B3062C31200795188 /* content */; };
+		0DFF38723062C31200795188 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385C3062C31200795188 /* README.md */; };
+		0DFF38733062C31200795188 /* icons in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385D3062C31200795188 /* icons */; };
+		0DFF38743062C31200795188 /* rules.json in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385E3062C31200795188 /* rules.json */; };
+		0DFF38753062C31200795188 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF385F3062C31200795188 /* manifest.json */; };
+		0DFF38763062C31200795188 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38603062C31200795188 /* _locales */; };
+		0DFF38773062C31200795188 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 0DFF38613062C31200795188 /* i18n.js */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0DFF382A3062C31200795188 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0DFF37F73062C31000795188 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0DFF38273062C31200795188;
+			remoteInfo = "CinePersona Safari Extension (iOS)";
+		};
+		0DFF38343062C31200795188 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0DFF37F73062C31000795188 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0DFF38313062C31200795188;
+			remoteInfo = "CinePersona Safari Extension (macOS)";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0DFF384B3062C31200795188 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				0DFF38293062C31200795188 /* CinePersona Safari Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+		0DFF38523062C31200795188 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				0DFF38333062C31200795188 /* CinePersona Safari Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0DFF37FE3062C31000795188 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		0DFF37FF3062C31000795188 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		0DFF38003062C31000795188 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		0DFF38013062C31000795188 /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		0DFF38023062C31000795188 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		0DFF38033062C31100795188 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		0DFF38053062C31100795188 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		0DFF380A3062C31100795188 /* CinePersona Safari.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "CinePersona Safari.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DFF380D3062C31100795188 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		0DFF380F3062C31100795188 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		0DFF38123062C31100795188 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		0DFF38153062C31100795188 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		0DFF38173062C31100795188 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0DFF381C3062C31100795188 /* CinePersona Safari.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "CinePersona Safari.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DFF381E3062C31100795188 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		0DFF38213062C31100795188 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		0DFF38233062C31100795188 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0DFF38283062C31200795188 /* CinePersona Safari Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "CinePersona Safari Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DFF382D3062C31200795188 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0DFF38323062C31200795188 /* CinePersona Safari Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "CinePersona Safari Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		0DFF38373062C31200795188 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0DFF38573062C31200795188 /* popup */ = {isa = PBXFileReference; lastKnownFileType = folder; name = popup; path = Resources/popup; sourceTree = "<group>"; };
+		0DFF38583062C31200795188 /* screenshots */ = {isa = PBXFileReference; lastKnownFileType = folder; name = screenshots; path = Resources/screenshots; sourceTree = "<group>"; };
+		0DFF38593062C31200795188 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; name = LICENSE; path = Resources/LICENSE; sourceTree = "<group>"; };
+		0DFF385A3062C31200795188 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = Resources/background.js; sourceTree = "<group>"; };
+		0DFF385B3062C31200795188 /* content */ = {isa = PBXFileReference; lastKnownFileType = folder; name = content; path = Resources/content; sourceTree = "<group>"; };
+		0DFF385C3062C31200795188 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = Resources/README.md; sourceTree = "<group>"; };
+		0DFF385D3062C31200795188 /* icons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = icons; path = Resources/icons; sourceTree = "<group>"; };
+		0DFF385E3062C31200795188 /* rules.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = rules.json; path = Resources/rules.json; sourceTree = "<group>"; };
+		0DFF385F3062C31200795188 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = Resources/manifest.json; sourceTree = "<group>"; };
+		0DFF38603062C31200795188 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; name = _locales; path = Resources/_locales; sourceTree = "<group>"; };
+		0DFF38613062C31200795188 /* i18n.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = i18n.js; path = Resources/i18n.js; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0DFF38073062C31100795188 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		0DFF38193062C31100795188 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		0DFF38253062C31200795188 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		0DFF382F3062C31200795188 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0DFF37F63062C31000795188 = {
+			isa = PBXGroup;
+			children = (
+				0DFF37FB3062C31000795188 /* Shared (App) */,
+				0DFF38043062C31100795188 /* Shared (Extension) */,
+				0DFF380C3062C31100795188 /* iOS (App) */,
+				0DFF381D3062C31100795188 /* macOS (App) */,
+				0DFF382C3062C31200795188 /* iOS (Extension) */,
+				0DFF38363062C31200795188 /* macOS (Extension) */,
+				0DFF380B3062C31100795188 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0DFF37FB3062C31000795188 /* Shared (App) */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF38023062C31000795188 /* ViewController.swift */,
+				0DFF38033062C31100795188 /* Assets.xcassets */,
+				0DFF37FC3062C31000795188 /* Resources */,
+			);
+			path = "Shared (App)";
+			sourceTree = "<group>";
+		};
+		0DFF37FC3062C31000795188 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF37FD3062C31000795188 /* Main.html */,
+				0DFF37FF3062C31000795188 /* Icon.png */,
+				0DFF38003062C31000795188 /* Style.css */,
+				0DFF38013062C31000795188 /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		0DFF38043062C31100795188 /* Shared (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF38563062C31200795188 /* Resources */,
+				0DFF38053062C31100795188 /* SafariWebExtensionHandler.swift */,
+			);
+			path = "Shared (Extension)";
+			sourceTree = "<group>";
+		};
+		0DFF380B3062C31100795188 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF380A3062C31100795188 /* CinePersona Safari.app */,
+				0DFF381C3062C31100795188 /* CinePersona Safari.app */,
+				0DFF38283062C31200795188 /* CinePersona Safari Extension.appex */,
+				0DFF38323062C31200795188 /* CinePersona Safari Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0DFF380C3062C31100795188 /* iOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF380D3062C31100795188 /* AppDelegate.swift */,
+				0DFF380F3062C31100795188 /* SceneDelegate.swift */,
+				0DFF38113062C31100795188 /* LaunchScreen.storyboard */,
+				0DFF38143062C31100795188 /* Main.storyboard */,
+				0DFF38173062C31100795188 /* Info.plist */,
+			);
+			path = "iOS (App)";
+			sourceTree = "<group>";
+		};
+		0DFF381D3062C31100795188 /* macOS (App) */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF381E3062C31100795188 /* AppDelegate.swift */,
+				0DFF38203062C31100795188 /* Main.storyboard */,
+				0DFF38233062C31100795188 /* Info.plist */,
+			);
+			path = "macOS (App)";
+			sourceTree = "<group>";
+		};
+		0DFF382C3062C31200795188 /* iOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF382D3062C31200795188 /* Info.plist */,
+			);
+			path = "iOS (Extension)";
+			sourceTree = "<group>";
+		};
+		0DFF38363062C31200795188 /* macOS (Extension) */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF38373062C31200795188 /* Info.plist */,
+			);
+			path = "macOS (Extension)";
+			sourceTree = "<group>";
+		};
+		0DFF38563062C31200795188 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0DFF38573062C31200795188 /* popup */,
+				0DFF38583062C31200795188 /* screenshots */,
+				0DFF38593062C31200795188 /* LICENSE */,
+				0DFF385A3062C31200795188 /* background.js */,
+				0DFF385B3062C31200795188 /* content */,
+				0DFF385C3062C31200795188 /* README.md */,
+				0DFF385D3062C31200795188 /* icons */,
+				0DFF385E3062C31200795188 /* rules.json */,
+				0DFF385F3062C31200795188 /* manifest.json */,
+				0DFF38603062C31200795188 /* _locales */,
+				0DFF38613062C31200795188 /* i18n.js */,
+			);
+			name = Resources;
+			path = "Shared (Extension)";
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0DFF38093062C31100795188 /* CinePersona Safari (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFF384C3062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari (iOS)" */;
+			buildPhases = (
+				0DFF38063062C31100795188 /* Sources */,
+				0DFF38073062C31100795188 /* Frameworks */,
+				0DFF38083062C31100795188 /* Resources */,
+				0DFF384B3062C31200795188 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0DFF382B3062C31200795188 /* PBXTargetDependency */,
+			);
+			name = "CinePersona Safari (iOS)";
+			productName = "CinePersona Safari (iOS)";
+			productReference = 0DFF380A3062C31100795188 /* CinePersona Safari.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0DFF381B3062C31100795188 /* CinePersona Safari (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFF38533062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari (macOS)" */;
+			buildPhases = (
+				0DFF38183062C31100795188 /* Sources */,
+				0DFF38193062C31100795188 /* Frameworks */,
+				0DFF381A3062C31100795188 /* Resources */,
+				0DFF38523062C31200795188 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0DFF38353062C31200795188 /* PBXTargetDependency */,
+			);
+			name = "CinePersona Safari (macOS)";
+			productName = "CinePersona Safari (macOS)";
+			productReference = 0DFF381C3062C31100795188 /* CinePersona Safari.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0DFF38273062C31200795188 /* CinePersona Safari Extension (iOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFF38483062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari Extension (iOS)" */;
+			buildPhases = (
+				0DFF38243062C31200795188 /* Sources */,
+				0DFF38253062C31200795188 /* Frameworks */,
+				0DFF38263062C31200795188 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "CinePersona Safari Extension (iOS)";
+			productName = "CinePersona Safari Extension (iOS)";
+			productReference = 0DFF38283062C31200795188 /* CinePersona Safari Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		0DFF38313062C31200795188 /* CinePersona Safari Extension (macOS) */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0DFF384F3062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari Extension (macOS)" */;
+			buildPhases = (
+				0DFF382E3062C31200795188 /* Sources */,
+				0DFF382F3062C31200795188 /* Frameworks */,
+				0DFF38303062C31200795188 /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "CinePersona Safari Extension (macOS)";
+			productName = "CinePersona Safari Extension (macOS)";
+			productReference = 0DFF38323062C31200795188 /* CinePersona Safari Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0DFF37F73062C31000795188 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					0DFF38093062C31100795188 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					0DFF381B3062C31100795188 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					0DFF38273062C31200795188 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					0DFF38313062C31200795188 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 0DFF37FA3062C31000795188 /* Build configuration list for PBXProject "CinePersona Safari" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0DFF37F63062C31000795188;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0DFF380B3062C31100795188 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0DFF38093062C31100795188 /* CinePersona Safari (iOS) */,
+				0DFF381B3062C31100795188 /* CinePersona Safari (macOS) */,
+				0DFF38273062C31200795188 /* CinePersona Safari Extension (iOS) */,
+				0DFF38313062C31200795188 /* CinePersona Safari Extension (macOS) */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0DFF38083062C31100795188 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				0DFF383A3062C31200795188 /* Icon.png in Resources */,
+				0DFF38133062C31100795188 /* LaunchScreen.storyboard in Resources */,
+				0DFF38383062C31200795188 /* Main.html in Resources */,
+				0DFF383E3062C31200795188 /* Script.js in Resources */,
+				0DFF38423062C31200795188 /* Assets.xcassets in Resources */,
+				0DFF38163062C31100795188 /* Main.storyboard in Resources */,
+				0DFF383C3062C31200795188 /* Style.css in Resources */,
+			);
+		};
+		0DFF381A3062C31100795188 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				0DFF383B3062C31200795188 /* Icon.png in Resources */,
+				0DFF383D3062C31200795188 /* Style.css in Resources */,
+				0DFF38223062C31100795188 /* Main.storyboard in Resources */,
+				0DFF383F3062C31200795188 /* Script.js in Resources */,
+				0DFF38433062C31200795188 /* Assets.xcassets in Resources */,
+				0DFF38393062C31200795188 /* Main.html in Resources */,
+			);
+		};
+		0DFF38263062C31200795188 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				0DFF38723062C31200795188 /* README.md in Resources */,
+				0DFF38703062C31200795188 /* background.js in Resources */,
+				0DFF386F3062C31200795188 /* LICENSE in Resources */,
+				0DFF386E3062C31200795188 /* screenshots in Resources */,
+				0DFF38753062C31200795188 /* manifest.json in Resources */,
+				0DFF386D3062C31200795188 /* popup in Resources */,
+				0DFF38743062C31200795188 /* rules.json in Resources */,
+				0DFF38733062C31200795188 /* icons in Resources */,
+				0DFF38773062C31200795188 /* i18n.js in Resources */,
+				0DFF38763062C31200795188 /* _locales in Resources */,
+				0DFF38713062C31200795188 /* content in Resources */,
+			);
+		};
+		0DFF38303062C31200795188 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				0DFF38673062C31200795188 /* README.md in Resources */,
+				0DFF38653062C31200795188 /* background.js in Resources */,
+				0DFF38643062C31200795188 /* LICENSE in Resources */,
+				0DFF38633062C31200795188 /* screenshots in Resources */,
+				0DFF386A3062C31200795188 /* manifest.json in Resources */,
+				0DFF38623062C31200795188 /* popup in Resources */,
+				0DFF38693062C31200795188 /* rules.json in Resources */,
+				0DFF38683062C31200795188 /* icons in Resources */,
+				0DFF386C3062C31200795188 /* i18n.js in Resources */,
+				0DFF386B3062C31200795188 /* _locales in Resources */,
+				0DFF38663062C31200795188 /* content in Resources */,
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0DFF38063062C31100795188 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				0DFF38403062C31200795188 /* ViewController.swift in Sources */,
+				0DFF380E3062C31100795188 /* AppDelegate.swift in Sources */,
+				0DFF38103062C31100795188 /* SceneDelegate.swift in Sources */,
+			);
+		};
+		0DFF38183062C31100795188 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				0DFF38413062C31200795188 /* ViewController.swift in Sources */,
+				0DFF381F3062C31100795188 /* AppDelegate.swift in Sources */,
+			);
+		};
+		0DFF38243062C31200795188 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				0DFF38443062C31200795188 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+		0DFF382E3062C31200795188 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				0DFF38453062C31200795188 /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0DFF382B3062C31200795188 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0DFF38273062C31200795188 /* CinePersona Safari Extension (iOS) */;
+			targetProxy = 0DFF382A3062C31200795188 /* PBXContainerItemProxy */;
+		};
+		0DFF38353062C31200795188 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0DFF38313062C31200795188 /* CinePersona Safari Extension (macOS) */;
+			targetProxy = 0DFF38343062C31200795188 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		0DFF37FD3062C31000795188 /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0DFF37FE3062C31000795188 /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		0DFF38113062C31100795188 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0DFF38123062C31100795188 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+		0DFF38143062C31100795188 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0DFF38153062C31100795188 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		0DFF38203062C31100795188 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				0DFF38213062C31100795188 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		0DFF38463062C31200795188 /* Debug configuration for PBXProject "CinePersona Safari" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		0DFF38473062C31200795188 /* Release configuration for PBXProject "CinePersona Safari" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		0DFF38493062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari Extension (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari.Extension;
+				PRODUCT_NAME = "CinePersona Safari Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0DFF384A3062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari Extension (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari.Extension;
+				PRODUCT_NAME = "CinePersona Safari Extension";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		0DFF384D3062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari;
+				PRODUCT_NAME = "CinePersona Safari";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0DFF384E3062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari (iOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "iOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari;
+				PRODUCT_NAME = "CinePersona Safari";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		0DFF38503062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari Extension (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari.Extension;
+				PRODUCT_NAME = "CinePersona Safari Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		0DFF38513062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari Extension (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari.Extension;
+				PRODUCT_NAME = "CinePersona Safari Extension";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		0DFF38543062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari;
+				PRODUCT_NAME = "CinePersona Safari";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		0DFF38553062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari (macOS)" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "macOS (App)/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "CinePersona Safari";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.1.5;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.gawyn.cinepersona.safari;
+				PRODUCT_NAME = "CinePersona Safari";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0DFF37FA3062C31000795188 /* Build configuration list for PBXProject "CinePersona Safari" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFF38463062C31200795188 /* Debug configuration for PBXProject "CinePersona Safari" */,
+				0DFF38473062C31200795188 /* Release configuration for PBXProject "CinePersona Safari" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		0DFF38483062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari Extension (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFF38493062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari Extension (iOS)" */,
+				0DFF384A3062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari Extension (iOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		0DFF384C3062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari (iOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFF384D3062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari (iOS)" */,
+				0DFF384E3062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari (iOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		0DFF384F3062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari Extension (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFF38503062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari Extension (macOS)" */,
+				0DFF38513062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari Extension (macOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		0DFF38533062C31200795188 /* Build configuration list for PBXNativeTarget "CinePersona Safari (macOS)" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0DFF38543062C31200795188 /* Debug configuration for PBXNativeTarget "CinePersona Safari (macOS)" */,
+				0DFF38553062C31200795188 /* Release configuration for PBXNativeTarget "CinePersona Safari (macOS)" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0DFF37F73062C31000795188 /* Project object */;
+	validationLevel = 1;
+}

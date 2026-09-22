@@ -1,0 +1,11 @@
+{
+  "extensionName": {
+    "message": "CinePersona — Movie Scrobbling & Watch Tracking"
+  },
+  "extensionDescription": {
+    "message": "Identify films while you watch, track your viewing, and build your personal movie DNA."
+  },
+  "actionTitle": {
+    "message": "CinePersona movie assistant"
+  }
+}

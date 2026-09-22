@@ -122,12 +122,6 @@ git clone https://github.com/Gawain12/cinepersona-extension.git
 # 2. 参照上方步骤，在浏览器拓展页加载克隆后的文件夹即可
 ```
 
-### 方式四：Safari（macOS / iPhone / iPad）
-
-- **macOS Safari 临时安装**：在[影格同步中心](https://cinepersona.com/sync)下载 `cinepersona-safari-extension-latest.zip` 并解压；Safari「设置 → 高级」开启开发者功能，再从「开发 → 允许未签名的扩展」进入「设置 → 扩展 → + → 添加临时扩展」，选择直接包含 `manifest.json`、`background.js`、`popup/` 和 `content/` 的文件夹。
-- **iPhone / iPad Safari**：不能直接加载 ZIP。打开仓库中的 `cinepersona-safari/CinePersona Safari/CinePersona Safari.xcodeproj`，选择 `CinePersona Safari (iOS)` 方案运行，再到「设置 → Safari → 扩展」启用。
-- 完整的 Xcode 构建、权限和临时扩展说明见 [`cinepersona-safari/README.md`](cinepersona-safari/README.md)。
-
 ---
 
 ## 📱 手机移动端使用说明
