@@ -32,7 +32,7 @@
   let scrobbler = new window.CineScrobbler();
   let ignoredReason = null; // "TV_SERIES" | "SHORT_CLIP" | "MANUAL_SKIP" | null
 
-  let cachedSettings = { scrobbleEnabled: true, disabledPlatforms: [] };
+  let cachedSettings = { scrobbleEnabled: true, disabledPlatforms: [], platformUsageConsent: true };
   let scrobbleSilent = false;
 
   function applyTimingPreference(value) {
@@ -46,9 +46,10 @@
 
   async function loadSettings() {
     try {
-      const res = await chrome.storage.local.get(["scrobbleEnabled", "disabledPlatforms"]);
+      const res = await chrome.storage.local.get(["scrobbleEnabled", "disabledPlatforms", "platformUsageConsent"]);
       if (typeof res.scrobbleEnabled === "boolean") cachedSettings.scrobbleEnabled = res.scrobbleEnabled;
       if (Array.isArray(res.disabledPlatforms)) cachedSettings.disabledPlatforms = res.disabledPlatforms;
+      if (typeof res.platformUsageConsent === "boolean") cachedSettings.platformUsageConsent = res.platformUsageConsent;
       const syncSettings = await chrome.storage.sync.get("timingPreference");
       applyTimingPreference(syncSettings.timingPreference);
     } catch (e) {}
@@ -59,6 +60,7 @@
     if (area === "local") {
       if (changes.scrobbleEnabled) cachedSettings.scrobbleEnabled = changes.scrobbleEnabled.newValue !== false;
       if (changes.disabledPlatforms) cachedSettings.disabledPlatforms = changes.disabledPlatforms.newValue || [];
+      if (changes.platformUsageConsent) cachedSettings.platformUsageConsent = changes.platformUsageConsent.newValue === true;
       if (!cachedSettings.scrobbleEnabled || cachedSettings.disabledPlatforms.includes(parser.name)) {
         if (scrobbler) scrobbler.detach();
         if (window.CineUI?.hide) window.CineUI.hide();
@@ -223,12 +225,15 @@
 
     console.log(`[CinePersona] 观影进度达标 (${Math.round(progress * 100)}%)，自动打卡记录...`);
 
+    const platformUsage = cachedSettings.platformUsageConsent ? parser.id : null;
+
     // 1. Send scrobble mark to background
     chrome.runtime.sendMessage({
       action: "LOG_ACTIVITY",
       payload: {
         movieId: movie.id,
-        status: "WATCHED"
+        status: "WATCHED",
+        ...(platformUsage ? { platformUsage } : {})
       }
     });
 
@@ -467,7 +472,8 @@
                     status: "WATCHED",
                     rating,
                     reviewText,
-                    isRewatch
+                    isRewatch,
+                    ...(cachedSettings.platformUsageConsent ? { platformUsage: parser.id } : {})
                   }
                 });
                 scrobbler.hasScrobbled = true;

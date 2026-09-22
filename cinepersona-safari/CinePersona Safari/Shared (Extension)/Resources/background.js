@@ -6,6 +6,7 @@ importScripts("i18n.js");
  */
 
 const DEFAULT_API_BASE = "https://cinepersona.com";
+const PRIVACY_POLICY_VERSION = "2026-09-22-r4";
 const bgT = (zh, en) => globalThis.CinePersonaI18n && typeof globalThis.CinePersonaI18n.t === "function"
   ? globalThis.CinePersonaI18n.t(zh, en)
   : zh;
@@ -969,10 +970,11 @@ async function checkAuth(apiBase = DEFAULT_API_BASE) {
     let stats = null;
     if (authenticated) {
       try {
-        const [accRes, libRes, watchRes] = await Promise.all([
+        const [accRes, libRes, watchRes, consentRes] = await Promise.all([
           fetch(`${apiBase}/v1/settings/account`, { credentials: "include" }),
           fetch(`${apiBase}/v1/me/library?limit=1`, { credentials: "include" }),
-          fetch(`${apiBase}/v1/me/watchlist?limit=1`, { credentials: "include" })
+          fetch(`${apiBase}/v1/me/watchlist?limit=1`, { credentials: "include" }),
+          fetch(`${apiBase}/v1/settings/privacy/consents`, { credentials: "include", cache: "no-store" })
         ]);
         if (accRes && accRes.ok) {
           const accJson = await accRes.json();
@@ -986,6 +988,11 @@ async function checkAuth(apiBase = DEFAULT_API_BASE) {
           watchedCount: libData?.data?.paging?.total ?? 0,
           watchlistCount: watchData?.data?.paging?.total ?? 0
         };
+        var platformUsageConsent = false;
+        if (consentRes && consentRes.ok) {
+          const consentJson = await consentRes.json();
+          platformUsageConsent = consentJson.data?.consents?.platform_usage?.granted === true;
+        }
       } catch (e) {}
     }
 
@@ -1002,11 +1009,35 @@ async function checkAuth(apiBase = DEFAULT_API_BASE) {
       authenticated,
       user,
       stats,
+      platformUsageConsent: Boolean(platformUsageConsent),
       apiBase
     };
   } catch (err) {
     console.log("[CinePersona SW] Check auth error:", err);
     return { authenticated: false, user: null, stats: null, apiBase };
+  }
+}
+
+async function updatePlatformUsageConsent(enabled, apiBase = DEFAULT_API_BASE) {
+  try {
+    const res = await fetch(`${apiBase}/v1/settings/privacy/consents`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        policyVersion: PRIVACY_POLICY_VERSION,
+        consents: { platform_usage: Boolean(enabled) },
+        source: "extension"
+      })
+    });
+    if (!res.ok) return { success: false };
+    const json = await res.json();
+    return {
+      success: json.success === true,
+      enabled: json.data?.consents?.platform_usage?.granted === true
+    };
+  } catch (err) {
+    return { success: false };
   }
 }
 
@@ -1308,7 +1339,7 @@ async function getActivity({ movieId }, apiBase = DEFAULT_API_BASE) {
 /**
  * Mark movie as watched / log rewatch / rate / review on CinePersona
  */
-async function logActivity({ movieId, status = "WATCHED", rating, reviewText, isRewatch = false }, apiBase = DEFAULT_API_BASE) {
+async function logActivity({ movieId, status = "WATCHED", rating, reviewText, isRewatch = false, platformUsage }, apiBase = DEFAULT_API_BASE) {
   try {
     const body = {
       status,
@@ -1322,6 +1353,9 @@ async function logActivity({ movieId, status = "WATCHED", rating, reviewText, is
     }
     if (isRewatch) {
       body.isRewatch = true;
+    }
+    if (typeof platformUsage === "string" && platformUsage.trim()) {
+      body.platformUsage = platformUsage;
     }
 
     const res = await fetch(`${apiBase}/v1/movies/${encodeURIComponent(movieId)}/viewer-activity`, {
@@ -1347,7 +1381,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       if (message.action === "CHECK_AUTH") {
         const auth = await checkAuth(apiBase);
+        await chrome.storage.local.set({ platformUsageConsent: Boolean(auth.platformUsageConsent) });
         sendResponse(auth);
+        return;
+      }
+
+      if (message.action === "SET_PLATFORM_USAGE_CONSENT") {
+        const result = await updatePlatformUsageConsent(Boolean(message.enabled), apiBase);
+        if (result.success) {
+          await chrome.storage.local.set({ platformUsageConsent: Boolean(result.enabled) });
+        }
+        sendResponse(result);
         return;
       }
 

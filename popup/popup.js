@@ -35,9 +35,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const platformsDetail = document.getElementById("platformsDetail");
   const scrobbleStateBadge = document.getElementById("scrobbleStateBadge");
   const masterScrobbleToggle = document.getElementById("masterScrobbleToggle");
+  const platformUsageToggle = document.getElementById("platformUsageToggle");
 
   let currentAuthState = null;
   let currentRenderedMovieId = null;
+
   let quickSearchTimer = null;
   let quickSearchRequestId = 0;
   let quickSearchHits = [];
@@ -56,6 +58,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
   updateScrobbleStateUI(scrobbleEnabled);
+
+  let { platformUsageConsent = true } = await chrome.storage.local.get("platformUsageConsent");
+  function updatePlatformUsageUI(enabled, authenticated = Boolean(currentAuthState?.authenticated)) {
+    platformUsageConsent = enabled === true;
+    if (platformUsageToggle) {
+      platformUsageToggle.checked = platformUsageConsent;
+      platformUsageToggle.disabled = !authenticated;
+    }
+  }
+  updatePlatformUsageUI(platformUsageConsent, false);
+
+  if (platformUsageToggle) {
+    platformUsageToggle.addEventListener("change", () => {
+      const nextValue = platformUsageToggle.checked;
+      platformUsageToggle.disabled = true;
+      chrome.runtime.sendMessage({ action: "SET_PLATFORM_USAGE_CONSENT", enabled: nextValue }, (res) => {
+        if (!res || !res.success) {
+          updatePlatformUsageUI(platformUsageConsent, Boolean(currentAuthState?.authenticated));
+          return;
+        }
+        updatePlatformUsageUI(res.enabled === true, Boolean(currentAuthState?.authenticated));
+      });
+    });
+  }
 
   if (masterScrobbleToggle) {
     masterScrobbleToggle.addEventListener("change", async (e) => {
@@ -206,6 +232,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderAuth(res) {
     currentAuthState = res;
+    updatePlatformUsageUI(Boolean(res?.platformUsageConsent), Boolean(res?.authenticated));
     if (res && res.authenticated) {
       authStatus.textContent = t("已连接", "Connected");
       authStatus.className = "status-badge online";

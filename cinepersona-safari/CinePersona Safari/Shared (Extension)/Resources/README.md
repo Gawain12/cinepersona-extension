@@ -24,6 +24,7 @@ CinePersona is a Chromium extension for movie scrobbling and personal movie disc
 
 - Cloud writes are opt-in: only records you explicitly select and confirm are sent to your CinePersona library.
 - The optional Douban connector is off by default. If you enable it, Douban data is first processed and stored locally; you can export a complete CSV backup at any time.
+- Optional platform stats save the normalized platform with the corresponding watch entry; you can remove that information from CinePersona privacy settings.
 - TV episodes, short videos, and commentary/UGC content are filtered out of the movie history.
 - The extension uses the browser language: Chinese browsers show Simplified Chinese, other non-empty languages show English, and an empty language falls back to Chinese.
 
@@ -141,6 +142,7 @@ git clone https://github.com/Gawain12/cinepersona-extension.git
 * **会话与 Cookie**：
   * 影格会话：依靠你在浏览器登录 CinePersona 的安全 Session Cookie 识别个人片库，扩展本身不记录你的账号密码；
   * 豆瓣读取：连接器默认关闭。启用后，扩展会在本地读取豆瓣会话来比对并保存你本人的豆瓣电影标记列表、生成 CSV 备份。你登录 CinePersona 并在同步时单独确认云端写入后，新增电影记录、评分、短评和标记时间才会通过 HTTPS 提交到 CinePersona 的导入接口；Cookie 值、密码或其他登录凭证不会上传给 CinePersona 或无关第三方。
+  * 平台统计：在设置中默认开启，也可以随时关闭。开启后扩展会把标准化平台名称保存到对应的观影记录，用于你的个人平台概览；关闭后会移除已有记录中的平台信息。
 
 ---
 
